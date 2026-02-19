@@ -8,6 +8,8 @@ import { useGoldPrices, ProductPrice } from '@/hooks/useGoldPrices';
 import { useTheme } from '@/hooks/useTheme';
 import { Skeleton } from '@/components/ui/skeleton';
 
+const USD_TO_QAR = 3.64;
+
 const sections = [
   { key: 'jewelry' as const, title: 'Gold Jewelry', subtitle: 'Price per gram by karat', unit: 'per gram', icon: <Gem className="w-5 h-5" /> },
   { key: 'goldBars' as const, title: 'Gold Bars', subtitle: 'Investment grade bullion', unit: undefined, icon: <Box className="w-5 h-5" /> },
@@ -15,13 +17,12 @@ const sections = [
   { key: 'silverBars' as const, title: 'Silver Bars', subtitle: 'Silver bullion products', unit: undefined, icon: <CircleDot className="w-5 h-5" /> },
 ];
 
-function applyMargin(products: ProductPrice[], margin: number): ProductPrice[] {
-  if (margin === 0) return products;
-  const factor = 1 + margin / 100;
+function applyMargin(products: ProductPrice[], marginUSD: number): ProductPrice[] {
+  if (marginUSD === 0) return products;
   return products.map(p => ({
     ...p,
-    usd: p.usd * factor,
-    qar: p.qar * factor,
+    usd: p.usd + marginUSD,
+    qar: (p.usd + marginUSD) * USD_TO_QAR,
   }));
 }
 
@@ -53,9 +54,7 @@ const Index = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Controls */}
-        <div className="flex items-center justify-between mb-8">
-          <MarginSettings margin={margin} onMarginChange={setMargin} />
-
+        <div className="flex items-center justify-end gap-2 mb-8">
           <div className="inline-flex items-center rounded-lg border border-border/60 bg-card p-1 gap-0.5">
             <button
               onClick={() => setView('cards')}
@@ -72,6 +71,7 @@ const Index = () => {
               <TableProperties className="w-5 h-5" />
             </button>
           </div>
+          <MarginSettings margin={margin} onMarginChange={setMargin} />
         </div>
 
         {prices.loading ? (
@@ -105,7 +105,7 @@ const Index = () => {
         <footer className="mt-16 pt-8 border-t border-border/50 text-center">
           <p className="text-sm font-sans text-muted-foreground">
             Prices are simulated for demo purposes · USD → QAR fixed at 3.64 · Auto-refreshes every second
-            {margin > 0 && ` · ${margin}% margin applied`}
+            {margin > 0 && ` · $${margin} margin applied`}
           </p>
         </footer>
       </main>

@@ -49,10 +49,12 @@ function LiveClock() {
   const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   return (
-    <div className="flex flex-col items-end text-right">
-      <span className="text-sm font-sans font-semibold text-foreground">{day}</span>
-      <span className="text-xs font-sans text-muted-foreground">{date}</span>
-      <span className="text-sm font-sans tabular-nums text-primary font-medium">{time}</span>
+    <div className="flex items-center gap-3 text-sm font-sans text-muted-foreground">
+      <span>{day}</span>
+      <span className="text-border">·</span>
+      <span>{date}</span>
+      <span className="text-border">·</span>
+      <span className="tabular-nums text-primary font-medium">{time}</span>
     </div>
   );
 }
@@ -60,42 +62,45 @@ function LiveClock() {
 export function Header({ isDark, onToggleTheme, spot, previousSpot }: HeaderProps) {
   return (
     <header className="border-b border-border/50 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg gold-shimmer" />
-            <div>
-              <h1 className="text-2xl md:text-3xl font-serif font-bold text-foreground tracking-tight leading-tight">
-                SISS Precious Metals
-              </h1>
-              <div className="flex items-center gap-2 text-xs font-sans text-muted-foreground">
-                <Activity className="w-3 h-3 text-success pulse-live" />
-                <span>Live Prices</span>
-              </div>
-            </div>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        {/* Top row: theme toggle */}
+        <div className="flex justify-end mb-3">
+          <button
+            onClick={onToggleTheme}
+            className="p-2 rounded-full hover:bg-secondary transition-colors"
+            aria-label="Toggle theme"
+          >
+            {isDark ? (
+              <Sun className="w-5 h-5 text-primary" />
+            ) : (
+              <Moon className="w-5 h-5 text-muted-foreground" />
+            )}
+          </button>
+        </div>
 
-          <div className="flex items-center gap-5">
-            <div className="hidden sm:block">
-              <LiveClock />
-            </div>
+        {/* Brand name centered */}
+        <div className="text-center mb-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-foreground tracking-tight uppercase">
+            Swiss Precious Metals
+          </h1>
+        </div>
 
-            <button
-              onClick={onToggleTheme}
-              className="p-2 rounded-full hover:bg-secondary transition-colors"
-              aria-label="Toggle theme"
-            >
-              {isDark ? (
-                <Sun className="w-5 h-5 text-primary" />
-              ) : (
-                <Moon className="w-5 h-5 text-muted-foreground" />
-              )}
-            </button>
+        {/* Date/time centered */}
+        <div className="flex justify-center mb-5">
+          <LiveClock />
+        </div>
+
+        {/* Live indicator */}
+        <div className="flex justify-center mb-4">
+          <div className="flex items-center gap-2 text-xs font-sans text-muted-foreground">
+            <Activity className="w-3 h-3 text-success pulse-live" />
+            <span>Live Prices</span>
           </div>
         </div>
 
+        {/* Spot prices */}
         {spot && (
-          <div className="flex items-center justify-center gap-8 sm:gap-12 pb-5 animate-fade-in-up">
+          <div className="flex items-center justify-center gap-8 sm:gap-12 animate-fade-in-up">
             <SpotBadge label="Gold / oz" price={spot.goldSpotUSD} prevPrice={previousSpot?.goldSpotUSD} />
             <div className="w-px h-10 bg-border" />
             <SpotBadge label="Silver / oz" price={spot.silverSpotUSD} prevPrice={previousSpot?.silverSpotUSD} />
