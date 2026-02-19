@@ -1,4 +1,5 @@
 import { ProductPrice } from '@/hooks/useGoldPrices';
+import { AnimatedNumber } from './AnimatedNumber';
 import {
   Table,
   TableBody,
@@ -14,11 +15,6 @@ interface PriceTableProps {
   products: ProductPrice[];
   unit?: string;
   icon: React.ReactNode;
-}
-
-function formatPrice(n: number): string {
-  if (n >= 10000) return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function PriceTable({ title, subtitle, products, unit, icon }: PriceTableProps) {
@@ -53,19 +49,17 @@ export function PriceTable({ title, subtitle, products, unit, icon }: PriceTable
                   {product.name}
                   {unit && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{unit}</span>}
                 </TableCell>
-                <TableCell className="text-right font-sans font-bold tabular-nums text-foreground">
-                  ${formatPrice(product.usd)}
+                <TableCell className="text-right">
+                  <AnimatedNumber value={product.usd} prefix="$" className="font-sans font-bold tabular-nums text-foreground" />
                 </TableCell>
-                <TableCell className="text-right font-sans font-semibold tabular-nums text-primary">
-                  {formatPrice(product.qar)}
+                <TableCell className="text-right">
+                  <AnimatedNumber value={product.qar} className="font-sans font-semibold tabular-nums text-primary" />
                 </TableCell>
                 <TableCell className="text-right">
                   {product.change !== 0 ? (
                     <span
                       className={`text-xs font-sans font-medium px-2 py-0.5 rounded-full ${
-                        product.change > 0
-                          ? 'bg-success/10 text-success'
-                          : 'bg-destructive/10 text-destructive'
+                        product.change > 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
                       }`}
                     >
                       {product.change > 0 ? '+' : ''}{product.change.toFixed(2)}%
