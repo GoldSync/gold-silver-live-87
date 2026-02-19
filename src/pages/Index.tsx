@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Gem, Box, Coins, CircleDot, LayoutGrid, TableProperties } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { PriceSection } from '@/components/PriceSection';
 import { PriceTable } from '@/components/PriceTable';
-import { useGoldPrices } from '@/hooks/useGoldPrices';
+import { MarginSettings } from '@/components/MarginSettings';
+import { useGoldPrices, ProductPrice } from '@/hooks/useGoldPrices';
 import { useTheme } from '@/hooks/useTheme';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -14,17 +15,28 @@ const sections = [
   { key: 'silverBars' as const, title: 'Silver Bars', subtitle: 'Silver bullion products', unit: undefined, icon: <CircleDot className="w-5 h-5" /> },
 ];
 
+function applyMargin(products: ProductPrice[], margin: number): ProductPrice[] {
+  if (margin === 0) return products;
+  const factor = 1 + margin / 100;
+  return products.map(p => ({
+    ...p,
+    usd: p.usd * factor,
+    qar: p.qar * factor,
+  }));
+}
+
 const Index = () => {
   const { isDark, toggle } = useTheme();
   const prices = useGoldPrices();
   const [view, setView] = useState<'cards' | 'table'>('cards');
+  const [margin, setMargin] = useState(0);
 
-  const dataMap = {
-    jewelry: prices.jewelry,
-    goldBars: prices.goldBars,
-    goldCoins: prices.goldCoins,
-    silverBars: prices.silverBars,
-  };
+  const dataMap = useMemo(() => ({
+    jewelry: applyMargin(prices.jewelry, margin),
+    goldBars: applyMargin(prices.goldBars, margin),
+    goldCoins: applyMargin(prices.goldCoins, margin),
+    silverBars: applyMargin(prices.silverBars, margin),
+  }), [prices.jewelry, prices.goldBars, prices.goldCoins, prices.silverBars, margin]);
 
   const ViewComponent = view === 'cards' ? PriceSection : PriceTable;
 
@@ -39,23 +51,25 @@ const Index = () => {
         lastUpdated={prices.lastUpdated}
       />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* View toggle */}
-        <div className="flex justify-end mb-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {/* Controls */}
+        <div className="flex items-center justify-between mb-8">
+          <MarginSettings margin={margin} onMarginChange={setMargin} />
+
           <div className="inline-flex items-center rounded-lg border border-border/60 bg-card p-1 gap-0.5">
             <button
               onClick={() => setView('cards')}
-              className={`p-2 rounded-md transition-colors ${view === 'cards' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`p-2.5 rounded-md transition-colors ${view === 'cards' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               aria-label="Card view"
             >
-              <LayoutGrid className="w-4 h-4" />
+              <LayoutGrid className="w-5 h-5" />
             </button>
             <button
               onClick={() => setView('table')}
-              className={`p-2 rounded-md transition-colors ${view === 'table' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`p-2.5 rounded-md transition-colors ${view === 'table' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               aria-label="Table view"
             >
-              <TableProperties className="w-4 h-4" />
+              <TableProperties className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -64,17 +78,17 @@ const Index = () => {
           <div className="space-y-12">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="space-y-4">
-                <Skeleton className="h-8 w-48" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <Skeleton className="h-10 w-56" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                   {[1, 2, 3, 4].map(j => (
-                    <Skeleton key={j} className="h-36 rounded-xl" />
+                    <Skeleton key={j} className="h-44 rounded-xl" />
                   ))}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="space-y-12 sm:space-y-16">
+          <div className="space-y-14 sm:space-y-18">
             {sections.map(s => (
               <ViewComponent
                 key={s.key}
@@ -89,8 +103,9 @@ const Index = () => {
         )}
 
         <footer className="mt-16 pt-8 border-t border-border/50 text-center">
-          <p className="text-xs font-sans text-muted-foreground">
-            Prices are simulated for demo purposes · USD → QAR fixed at 3.64 · Auto-refreshes every 60s
+          <p className="text-sm font-sans text-muted-foreground">
+            Prices are simulated for demo purposes · USD → QAR fixed at 3.64 · Auto-refreshes every second
+            {margin > 0 && ` · ${margin}% margin applied`}
           </p>
         </footer>
       </main>
