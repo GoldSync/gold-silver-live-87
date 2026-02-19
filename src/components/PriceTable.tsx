@@ -37,8 +37,8 @@ export function PriceTable({ title, subtitle, products, unit, icon }: PriceTable
           <TableHeader>
             <TableRow className="border-border/40 hover:bg-transparent">
               <TableHead className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Product</TableHead>
-              <TableHead className="font-sans text-xs uppercase tracking-wider text-muted-foreground text-right">USD</TableHead>
               <TableHead className="font-sans text-xs uppercase tracking-wider text-muted-foreground text-right">QAR</TableHead>
+              <TableHead className="font-sans text-xs uppercase tracking-wider text-muted-foreground text-right">USD</TableHead>
               <TableHead className="font-sans text-xs uppercase tracking-wider text-muted-foreground text-right">Change</TableHead>
             </TableRow>
           </TableHeader>
@@ -50,10 +50,10 @@ export function PriceTable({ title, subtitle, products, unit, icon }: PriceTable
                   {unit && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{unit}</span>}
                 </TableCell>
                 <TableCell className="text-right">
-                  <AnimatedNumber value={product.usd} prefix="$" className="font-sans font-bold tabular-nums text-foreground" />
+                  <AnimatedNumber value={product.qar} className="font-sans font-bold tabular-nums text-foreground" />
                 </TableCell>
                 <TableCell className="text-right">
-                  <AnimatedNumber value={product.qar} className="font-sans font-semibold tabular-nums text-primary" />
+                  <AnimatedNumber value={product.usd} prefix="$" className="font-sans font-semibold tabular-nums text-primary" />
                 </TableCell>
                 <TableCell className="text-right">
                   {product.change !== 0 ? (

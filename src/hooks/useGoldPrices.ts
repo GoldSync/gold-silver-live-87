@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 const USD_TO_QAR = 3.64;
-const REFRESH_INTERVAL = 60; // seconds
+const REFRESH_INTERVAL = 1; // seconds
 
 // Troy ounce in grams
 const TROY_OZ_GRAMS = 31.1035;
