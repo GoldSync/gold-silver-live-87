@@ -23,7 +23,7 @@ function SpotBadge({ label, price, prevPrice }: { label: string; price: number; 
           value={price}
           prefix="$"
           decimals={2}
-          className="text-lg md:text-xl font-semibold font-sans tabular-nums text-foreground"
+          className="text-xl md:text-2xl font-semibold font-sans tabular-nums text-foreground"
         />
         {diff !== 0 && (
           <span className={`text-xs font-sans font-medium ${isUp ? 'text-success' : 'text-destructive'}`}>
@@ -42,7 +42,7 @@ export function Header({ isDark, onToggleTheme, spot, previousSpot, countdown, l
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg gold-shimmer" />
-            <h1 className="text-xl md:text-2xl font-serif font-bold text-foreground tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-serif font-bold text-foreground tracking-tight">
               Gold Pulse
             </h1>
           </div>
