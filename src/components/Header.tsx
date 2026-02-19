@@ -55,7 +55,6 @@ export function Header({ isDark, onToggleTheme, spot, previousSpot, countdown, l
                   ? `Updated ${lastUpdated.toLocaleTimeString()}`
                   : 'Connecting...'}
               </span>
-              <span className="text-muted-foreground/60">· {countdown}s</span>
             </div>
 
             <button

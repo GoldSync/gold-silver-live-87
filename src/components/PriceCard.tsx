@@ -27,12 +27,12 @@ export function PriceCard({ product, unit }: PriceCardProps) {
 
       <div className="space-y-2">
         <div className="flex items-baseline justify-between">
-          <span className="text-xs font-sans uppercase tracking-wider text-muted-foreground">USD</span>
-          <AnimatedNumber value={usd} prefix="$" className="text-xl font-sans font-bold tabular-nums text-foreground" />
+          <span className="text-xs font-sans uppercase tracking-wider text-muted-foreground">QAR</span>
+          <AnimatedNumber value={qar} className="text-xl font-sans font-bold tabular-nums text-foreground" />
         </div>
         <div className="flex items-baseline justify-between">
-          <span className="text-xs font-sans uppercase tracking-wider text-muted-foreground">QAR</span>
-          <AnimatedNumber value={qar} className="text-lg font-sans font-semibold tabular-nums text-primary" />
+          <span className="text-xs font-sans uppercase tracking-wider text-muted-foreground">USD</span>
+          <AnimatedNumber value={usd} prefix="$" className="text-lg font-sans font-semibold tabular-nums text-primary" />
         </div>
       </div>
 
