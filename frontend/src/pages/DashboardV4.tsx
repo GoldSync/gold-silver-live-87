@@ -7,7 +7,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/hooks/useTheme';
 import { Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/goldsync.png';
 import { MarketClosedBanner } from '@/components/MarketClosedBanner';
 import { DashboardLockOverlay } from '@/components/DashboardLockOverlay';
 
@@ -277,11 +277,11 @@ const DashboardV4 = () => {
                     <div className="flex flex-col items-center mb-4 shrink-0">
                         <img
                             src={logo}
-                            alt="Swiss Precious Metals"
+                            alt="GoldSync"
                             className="h-20 sm:h-24 md:h-28 w-auto object-contain mb-3 drop-shadow-sm"
                         />
                         <h1 className={`text-xl sm:text-2xl font-serif tracking-wide ${theme.textMain} font-medium mb-1`}>
-                            Swiss Precious Metals
+                            GoldSync
                         </h1>
                         <div className={`flex items-center gap-2 text-[10px] sm:text-xs xl:text-sm tracking-[0.2em] uppercase font-semibold ${theme.goldText} whitespace-nowrap`}>
                             <span className="relative flex h-2 w-2 shrink-0">
@@ -428,7 +428,7 @@ const DashboardV4 = () => {
                     </div>
                     <footer className="mt-2 pt-2 border-t border-border/50 text-center">
                         <p className="text-sm font-sans text-muted-foreground">
-                            © Swiss Precious Metals. All rights reserved.
+                            © GoldSync. All rights reserved.
                         </p>
                     </footer>
                 </div>

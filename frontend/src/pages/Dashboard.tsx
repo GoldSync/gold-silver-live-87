@@ -7,7 +7,7 @@ import { PriceCard } from '@/components/PriceCard';
 import { useSettings } from '@/hooks/useSettings';
 import { Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/goldsync.png';
 import { MarketClosedBanner } from '@/components/MarketClosedBanner';
 import { DashboardLockOverlay } from '@/components/DashboardLockOverlay';
 
@@ -142,10 +142,10 @@ const Dashboard = () => {
                 <div className="bg-card/40 backdrop-blur-2xl rounded-[2rem] border border-white/20 dark:border-white/5 p-8 flex flex-col items-center justify-center shrink-0 shadow-2xl relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-black/5 dark:to-white/5 pointer-events-none opacity-40" />
 
-                    <img src={logo} alt="Logo" className="h-28 xl:h-32 w-auto object-contain relative z-10 drop-shadow-2xl mb-8 transition-transform duration-700 ease-out group-hover:scale-105" />
+                    <img src={logo} alt="GoldSync Logo" className="h-28 xl:h-32 w-auto object-contain relative z-10 drop-shadow-2xl mb-8 transition-transform duration-700 ease-out group-hover:scale-105" />
 
                     <h1 className="text-xl xl:text-2xl font-serif text-center font-bold tracking-tight text-foreground relative z-10 leading-snug">
-                        Swiss Precious Metals
+                        GoldSync
                     </h1>
                 </div>
 

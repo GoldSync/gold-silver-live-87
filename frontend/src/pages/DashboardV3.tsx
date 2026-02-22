@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useGoldPrices, ProductPrice } from '@/hooks/useGoldPrices';
 import { useSettings } from '@/hooks/useSettings';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/goldsync.png';
 import { MarketClosedBanner } from '@/components/MarketClosedBanner';
 import { DashboardLockOverlay } from '@/components/DashboardLockOverlay';
 
@@ -141,9 +141,9 @@ const DashboardV3 = () => {
             {/* Crude Footer matching reference */}
             <div style={{ backgroundColor: '#222', color: 'white', textAlign: 'center', padding: '30px' }}>
                 <img src={logo} alt="Logo" style={{ filter: 'invert(1)', height: '40px' }} />
-                <h3>Swiss Precious Metals</h3>
+                <h3>GoldSync</h3>
                 <p>Social Links Area</p>
-                <small>© {new Date().getFullYear()} All rights reserved. SPM.</small>
+                <small>© {new Date().getFullYear()} All rights reserved. GoldSync.</small>
             </div>
         </div>
     );

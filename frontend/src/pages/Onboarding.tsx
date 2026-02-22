@@ -96,10 +96,6 @@ export default function Onboarding() {
                                 <Sparkles className="w-8 h-8 text-primary" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-foreground mb-2">Welcome to SPM Live</h1>
-                                <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
-                                    Let's get your live pricing dashboard set up. This quick setup will configure your admin account and pricing margins.
-                                </p>
                             </div>
                             <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-xs text-muted-foreground">
                                 <strong className="text-foreground">Starting from zero</strong> — All margins and markups are set to $0 by default, showing raw market data. You can adjust them during this setup or later from the admin panel.

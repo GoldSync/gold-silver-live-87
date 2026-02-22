@@ -1,4 +1,4 @@
-# SPM Live Visual Manager - Separated Architecture
+# GoldSync Live Visual Manager - Separated Architecture
 
 The project has been separated into independent **Frontend** and **Backend** directories for easier deployment and maintenance.
 

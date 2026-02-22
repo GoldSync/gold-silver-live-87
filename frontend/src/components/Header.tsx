@@ -1,5 +1,5 @@
 import { Moon, Sun, Activity, RefreshCw } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/goldsync.png';
 import { PriceData } from '@/hooks/useGoldPrices';
 import { AnimatedNumber } from './AnimatedNumber';
 import { useState, useEffect } from 'react';
@@ -134,11 +134,13 @@ export function Header({
 
         {/* Brand name centered */}
         <div className="text-center mb-2 flex flex-col items-center gap-4">
-          <img src={logo} alt="Swiss Precious Metals Logo" className="h-40  w-auto" />
+          <img src={logo} alt="GoldSync Logo" className="h-40 w-auto" />
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground tracking-tight uppercase">
-            Swiss Precious Metals
+            GoldSync
           </h1>
         </div>
+
+        {/* Brand name centered */}
 
         {/* Date/time centered */}
         <div className="flex justify-center mb-5">

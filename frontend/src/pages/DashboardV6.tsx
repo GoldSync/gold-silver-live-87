@@ -324,7 +324,7 @@ const DashboardV6 = () => {
                     <div className="w-full shrink-0 flex flex-col items-center pb-6">
                         <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
                         <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
-                            © Swiss Precious Metals · Security & Precision · {now.getFullYear()}
+                            © GoldSync · Security & Precision · {now.getFullYear()}
                         </p>
                     </div>
 

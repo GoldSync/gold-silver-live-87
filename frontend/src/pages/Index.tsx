@@ -178,7 +178,6 @@ const Index = () => {
 
         <footer className="mt-8 pt-8 border-t border-border/50 text-center">
           <p className="text-sm font-sans text-muted-foreground">
-            Swiss Precious Metals. All rights reserved.
             {margin > 0 && ` · $${margin} margin applied`}
           </p>
         </footer>

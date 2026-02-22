@@ -279,7 +279,6 @@ const DashboardV5 = () => {
 
                 <footer className="mt-16 pt-8 border-t border-border/50 text-center">
                     <p className="text-sm font-sans text-muted-foreground">
-                        Swiss Precious Metals. All rights reserved.
                         {localMargin > 0 && ` · Custom ${localMargin}% margin applied locally`}
                     </p>
                 </footer>
