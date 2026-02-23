@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/api';
+import { getFingerprint } from '@/lib/fingerprint';
 
 export interface CategoryTitles {
     goldBars: string;
@@ -33,7 +34,19 @@ export function useSettings() {
     const fetchSettings = useCallback(async (silent = false) => {
         try {
             if (!silent) setLoading(true);
-            const res = await fetch(`${API_BASE_URL}/settings`);
+            const fingerprint = getFingerprint();
+            const res = await fetch(`${API_BASE_URL}/settings`, {
+                headers: {
+                    'X-Fingerprint': fingerprint
+                }
+            });
+
+            if (res.status === 402) {
+                const errorData = await res.json();
+                window.dispatchEvent(new CustomEvent('GS_TRIAL_EXPIRED', { detail: errorData }));
+                return;
+            }
+
             if (res.ok) {
                 const data = await res.json();
                 if (data.categoryTitles) setCategoryTitles(data.categoryTitles);

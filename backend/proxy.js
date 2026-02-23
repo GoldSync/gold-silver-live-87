@@ -212,6 +212,17 @@ const closingPriceSchema = new mongoose.Schema({
 });
 const ClosingPrice = mongoose.model('ClosingPrice', closingPriceSchema);
 
+const visitorSchema = new mongoose.Schema({
+    fingerprint: { type: String, required: true, unique: true },
+    firstSeen: { type: Date, default: Date.now },
+    isExtended: { type: Boolean, default: false },
+    extendedAt: { type: Date, default: null },
+    name: { type: String, default: '' },
+    email: { type: String, default: '' }, // Could be phone or email
+    lastSeen: { type: Date, default: Date.now }
+});
+const Visitor = mongoose.model('Visitor', visitorSchema);
+
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -222,6 +233,65 @@ const authenticateToken = (req, res, next) => {
         req.user = user;
         next();
     });
+};
+
+const checkTrialStatus = async (req, res, next) => {
+    // Skip trial check for internal/authenticated requests or certain paths
+    if (req.headers['authorization']) return next();
+    if (req.path.includes('/auth/') || req.path.includes('/onboarding/')) return next();
+
+    const fingerprint = req.headers['x-fingerprint'];
+    if (!fingerprint) {
+        // We don't block yet if no fingerprint (for backward compatibility), 
+        // but it will be mandatory soon.
+        return next();
+    }
+
+    try {
+        let visitor = await Visitor.findOne({ fingerprint });
+        if (!visitor) {
+            visitor = new Visitor({ fingerprint });
+            await visitor.save();
+            return next();
+        }
+
+        // Update last seen
+        visitor.lastSeen = new Date();
+        await visitor.save();
+
+        const now = new Date();
+        const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+        const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+
+        // Check if 7 days initial trial is over
+        const isInitialTrialOver = (now - visitor.firstSeen) > sevenDaysMs;
+
+        if (isInitialTrialOver) {
+            // Initial trial over, check if extended
+            if (!visitor.isExtended) {
+                return res.status(402).json({
+                    error: 'Trial Expired',
+                    code: 'TRIAL_EXPIRED_INITIAL',
+                    message: 'Your 7-day initial trial has ended. Scan the QR code to unlock 3 more days.'
+                });
+            }
+
+            // check if extension is also over
+            const isExtensionOver = (now - visitor.extendedAt) > threeDaysMs;
+            if (isExtensionOver) {
+                return res.status(402).json({
+                    error: 'Trial Expired',
+                    code: 'TRIAL_EXPIRED_EXTENDED',
+                    message: 'Your extended 3-day trial has ended. Please contact us for full access.'
+                });
+            }
+        }
+
+        next();
+    } catch (err) {
+        console.error('[TRIAL] Error checking status:', err);
+        next(); // Fail open to not block users on DB errors
+    }
 };
 
 // Graceful Shutdown Handler
@@ -729,7 +799,7 @@ app.post('/api/onboarding/complete', async (req, res) => {
     }
 });
 
-app.get('/api/products', async (req, res) => {
+app.get('/api/products', checkTrialStatus, async (req, res) => {
     try {
         if (mongoose.connection.readyState !== 1) {
             return res.json([]);
@@ -771,7 +841,7 @@ app.delete('/api/products/:id', authenticateToken, async (req, res) => {
 });
 
 // Settings API
-app.get('/api/settings', async (req, res) => {
+app.get('/api/settings', checkTrialStatus, async (req, res) => {
     try {
         if (mongoose.connection.readyState !== 1) {
             return res.json({ categoryTitles: {} });
@@ -873,9 +943,35 @@ app.post('/api/system/factory-reset', authenticateToken, async (req, res) => {
     }
 });
 
+app.post('/api/trial/extend', async (req, res) => {
+    const { fingerprint, name, email } = req.body;
+    if (!fingerprint || !name || !email) {
+        return res.status(400).json({ error: 'Fingerprint, name, and email are required' });
+    }
 
-// API Endpoint
-app.get('/api/prices', (req, res) => {
+    try {
+        let visitor = await Visitor.findOne({ fingerprint });
+        if (!visitor) {
+            visitor = new Visitor({ fingerprint });
+        }
+
+        visitor.name = name;
+        visitor.email = email;
+        visitor.isExtended = true;
+        visitor.extendedAt = new Date();
+        await visitor.save();
+
+        console.log(`[TRIAL] Trial extended for visitor: ${name} (${email})`);
+        res.json({ success: true, message: 'Trial extended by 7 days' });
+    } catch (err) {
+        console.error('[TRIAL] Error extending trial:', err);
+        res.status(500).json({ error: 'Failed to extend trial' });
+    }
+});
+
+
+// API Endpoints
+app.get('/api/prices', checkTrialStatus, (req, res) => {
     if (cachedPrices) {
         res.json(cachedPrices);
     } else {

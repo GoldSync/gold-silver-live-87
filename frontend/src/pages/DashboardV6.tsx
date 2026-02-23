@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import logo from '@/assets/goldsync_logo.png';
 import { MarketClosedBanner } from '@/components/MarketClosedBanner';
 import { DashboardLockOverlay } from '@/components/DashboardLockOverlay';
+import { TrialExpiredModal } from '@/components/TrialExpiredModal';
 
 import globalCurrenciesImg from '@/assets/images/Global currencies.png';
 import pamp1ozImg from '@/assets/images/pamp 1oz.png';
@@ -90,6 +91,20 @@ const DashboardV6 = () => {
         return () => clearInterval(timer);
     }, []);
 
+    // Trial Expiration Logic
+    const [trialExpired, setTrialExpired] = useState<{ type: 'INITIAL' | 'EXTENDED' } | null>(null);
+
+    useEffect(() => {
+        const handleTrialExpired = (e: any) => {
+            const detail = e.detail;
+            const type = detail.code === 'TRIAL_EXPIRED_EXTENDED' ? 'EXTENDED' : 'INITIAL';
+            setTrialExpired({ type });
+        };
+
+        window.addEventListener('GS_TRIAL_EXPIRED', handleTrialExpired);
+        return () => window.removeEventListener('GS_TRIAL_EXPIRED', handleTrialExpired);
+    }, []);
+
     const dataMap = useMemo(() => ({
         jewelry: prices.jewelry,
         goldBars: applyMargin(prices.goldBars, margin, marginType, currencyRate),
@@ -128,6 +143,7 @@ const DashboardV6 = () => {
     return (
         <div className={`min-h-screen transition-colors duration-1000 ${isDark ? 'dark bg-[#0a0f1a] text-blue-50' : 'bg-blue-50/30 text-slate-900'} relative overflow-hidden`}>
             {isLocked && <DashboardLockOverlay />}
+            {trialExpired && <TrialExpiredModal type={trialExpired.type} />}
             {/* Background elements */}
             <style>{`
                 @keyframes parallax {
@@ -207,12 +223,12 @@ const DashboardV6 = () => {
                     </Button>
                 </div>
 
-                {/* SCALED CONTENT CONTAINER (Scaling applied only on larger screens) */}
+                {/* SCALED CONTENT CONTAINER (Scaling applied only on larger screens like 4K TVs) */}
                 <div
                     className="w-full h-full flex flex-col items-center overflow-y-auto sm:overflow-hidden"
-                    style={window.innerWidth > 1024 ? { transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' } : {}}
+                    style={window.innerWidth > 2000 ? { transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' } : {}}
                 >
-                    <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center h-full relative">
+                    <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center min-h-full relative">
 
                         {/* 1. TOP LOGO SECTION */}
                         <div className="flex flex-col items-center mb-4 sm:mb-6 shrink-0 pt-32 sm:pt-4">
@@ -343,8 +359,8 @@ const DashboardV6 = () => {
                         </div>
 
 
-                        {/* FOOTER */}
-                        <div className="w-full shrink-0 flex flex-col items-center pb-6">
+                        {/* FOOTER - Pushed to bottom */}
+                        <div className="w-full shrink-0 flex flex-col items-center pb-6 mt-auto">
                             <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
                             <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
                                 © GoldSync · Security & Precision · {now.getFullYear()}
