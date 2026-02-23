@@ -225,7 +225,7 @@ const DashboardV6 = () => {
 
                 {/* SCALED CONTENT CONTAINER (Adaptive scaling for Laptops vs 4K TVs) */}
                 <div
-                    className="w-full h-full flex flex-col items-center overflow-y-auto"
+                    className="w-full flex-1 flex flex-col items-center overflow-y-auto"
                     style={
                         window.innerWidth > 2000
                             ? { transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' }
@@ -234,7 +234,7 @@ const DashboardV6 = () => {
                                 : {}
                     }
                 >
-                    <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center min-h-full relative">
+                    <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center min-h-full relative overflow-x-hidden">
 
                         {/* 1. TOP LOGO SECTION */}
                         <div className="flex flex-col items-center mb-4 sm:mb-6 shrink-0 pt-32 sm:pt-4">
@@ -256,8 +256,8 @@ const DashboardV6 = () => {
                         )}
 
                         {/* 2. SPOT PRICES - GLASS BOX */}
-                        <div className="w-full max-w-[1100px] bg-black/40 backdrop-blur-xl rounded-[1.5rem] sm:rounded-[2.5rem] border border-[#ab8c56]/30 p-4 sm:p-8 mb-6 sm:mb-8 shadow-2xl">
-                            <div className="flex flex-col md:flex-row items-stretch justify-center gap-4 sm:gap-8 md:gap-16">
+                        <div className="w-full max-w-[1400px] bg-black/40 backdrop-blur-xl rounded-[1.5rem] sm:rounded-[2.5rem] border border-[#ab8c56]/30 p-4 sm:p-10 mb-12 sm:mb-16 shadow-2xl shrink-0">
+                            <div className="flex flex-col md:flex-row items-stretch justify-center gap-6 sm:gap-10 md:gap-20">
 
                                 {/* GOLD UNIT */}
                                 <div className={`flex flex-col items-center p-4 sm:p-6 rounded-2xl sm:rounded-3xl ${getBlockStyle(currentGoldDiff)} flex-1 transition-all duration-700`}>
@@ -344,7 +344,7 @@ const DashboardV6 = () => {
                         </div>
 
                         {/* 4. PRODUCT GRID */}
-                        <div className="w-full max-w-[1200px] flex-1 min-h-0 overflow-y-auto custom-scrollbar px-2 pb-10">
+                        <div className="w-full max-w-[1400px] flex-1 min-h-0 overflow-y-visible px-2 pb-20">
                             {prices.loading ? (
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                     {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
@@ -352,7 +352,7 @@ const DashboardV6 = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 sm:gap-6">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 sm:gap-10">
                                     {currentProducts.map((product) => (
                                         <PriceCard
                                             key={product.name}
