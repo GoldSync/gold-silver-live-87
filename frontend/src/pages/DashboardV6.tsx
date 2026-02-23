@@ -357,7 +357,7 @@ const DashboardV6 = () => {
                                         <PriceCard
                                             key={product.name}
                                             product={product}
-                                            className="w-full bg-white/[0.03] backdrop-blur-2xl border-white/[0.08] hover:border-[#ab8c56]/40 transition-all duration-500 shadow-[0_12px_40px_-5px_rgba(0,0,0,0.4)] h-[170px]"
+                                            className="w-full bg-white/[0.03] backdrop-blur-2xl border-white/[0.08] hover:border-[#ab8c56]/40 transition-all duration-500 shadow-[0_12px_40px_-5px_rgba(0,0,0,0.4)] h-[140px]"
                                         />
                                     ))}
                                 </div>
@@ -365,13 +365,7 @@ const DashboardV6 = () => {
                         </div>
 
 
-                        {/* FOOTER - Pushed to bottom */}
-                        <div className="w-full shrink-0 flex flex-col items-center pb-6 mt-auto">
-                            <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
-                            <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
-                                © GoldSync · Security & Precision · {now.getFullYear()}
-                            </p>
-                        </div>
+
 
                     </div>
                 </div>
@@ -384,7 +378,13 @@ const DashboardV6 = () => {
                         <p className="text-xs text-[#ab8c56] tracking-[0.2em] uppercase mt-1 opacity-70">{backgroundSlides[slideIndex].subtitle}</p>
                     </div>
                 </div>
-
+                {/* FOOTER - Pushed to bottom */}
+                <div className="w-full shrink-0 flex flex-col items-center pb-6 mt-auto">
+                    <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
+                    <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
+                        © GoldSync · Security & Precision · {now.getFullYear()}
+                    </p>
+                </div>
             </div>
         </div>
     );
