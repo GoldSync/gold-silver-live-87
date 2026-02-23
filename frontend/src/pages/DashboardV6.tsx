@@ -223,10 +223,16 @@ const DashboardV6 = () => {
                     </Button>
                 </div>
 
-                {/* SCALED CONTENT CONTAINER (Scaling applied only on larger screens like 4K TVs) */}
+                {/* SCALED CONTENT CONTAINER (Adaptive scaling for Laptops vs 4K TVs) */}
                 <div
-                    className="w-full h-full flex flex-col items-center overflow-y-auto sm:overflow-hidden"
-                    style={window.innerWidth > 2000 ? { transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' } : {}}
+                    className="w-full h-full flex flex-col items-center overflow-y-auto"
+                    style={
+                        window.innerWidth > 2000
+                            ? { transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' }
+                            : window.innerWidth > 1400
+                                ? { transform: 'scale(0.9)', transformOrigin: 'top center', width: '111.11%', height: '111.11%' }
+                                : {}
+                    }
                 >
                     <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center min-h-full relative">
 
@@ -346,7 +352,7 @@ const DashboardV6 = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 sm:gap-6">
                                     {currentProducts.map((product) => (
                                         <PriceCard
                                             key={product.name}
