@@ -160,27 +160,43 @@ const DashboardV6 = () => {
             </div>
 
             {/* MAIN CONTENT LAYER */}
-            <div className="flex-1 h-full relative flex flex-col items-center z-10 overflow-hidden">
+            <div className="absolute inset-0 z-10 overflow-hidden flex flex-col items-center">
 
-                {/* TOP LEFT TIME BLOCK */}
-                <div className="absolute top-6 left-6 z-50 flex flex-col gap-1 bg-black/20 backdrop-blur-xl px-6 py-4 rounded-2xl border border-white/10 drop-shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-                    <div className="text-2xl font-sans font-bold text-white uppercase tracking-[0.3em] tabular-nums">
-                        {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                {/* UNIFIED HEADER BLOCK (Single row on mobile, split on desktop) */}
+                <div className="absolute top-4 left-4 right-4 sm:top-0 sm:left-0 sm:right-0 sm:contents z-50">
+                    <div className="flex flex-row sm:flex-col justify-between items-center sm:items-start sm:absolute sm:top-6 sm:left-6 bg-black/20 backdrop-blur-xl px-4 py-3 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl border border-white/10 drop-shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full sm:w-auto">
+                        <div className="flex flex-col">
+                            <div className="text-xl sm:text-2xl font-sans font-bold text-white uppercase tracking-[0.1em] sm:tracking-[0.3em] tabular-nums">
+                                {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                            </div>
+                            <div className="hidden sm:block text-[10px] uppercase tracking-[0.2em] text-[#ab8c56] font-bold">
+                                Local Time
+                            </div>
+                        </div>
+
+                        {/* Date part - Only visible in the shared row on mobile */}
+                        <div className="flex flex-col items-end sm:hidden">
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-white font-bold leading-tight">
+                                {now.toLocaleDateString('en-US', { weekday: 'long' })}
+                            </div>
+                            <div className="text-[8px] uppercase tracking-[0.1em] text-[#ab8c56] font-bold">
+                                {now.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Desktop Date Block (Hidden on mobile) */}
+                    <div className="hidden sm:flex absolute top-6 right-6 flex-col items-end gap-1 bg-black/20 backdrop-blur-xl px-6 py-4 rounded-2xl border border-white/10 drop-shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+                        <div className="text-sm uppercase tracking-[0.4em] text-white font-bold">
+                            {now.toLocaleDateString('en-US', { weekday: 'long' })}
+                        </div>
+                        <div className="text-xs uppercase tracking-[0.2em] text-[#ab8c56] font-bold">
+                            {now.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
                     </div>
                 </div>
 
-                {/* TOP RIGHT DATE BLOCK */}
-                <div className="absolute top-6 right-6 z-50 flex flex-col items-end gap-1 bg-black/20 backdrop-blur-xl px-6 py-4 rounded-2xl border border-white/10 drop-shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-                    <div className="text-sm uppercase tracking-[0.4em] text-white font-bold">
-                        {now.toLocaleDateString('en-US', { weekday: 'long' })}
-                    </div>
-                    <div className="text-xs uppercase tracking-[0.2em] text-[#ab8c56] font-bold">
-                        {now.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </div>
-                </div>
-
-                {/* THEME TOGGLE (Adjusted Position) */}
-                <div className="absolute top-[120px] right-6 p-4 z-50">
+                <div className="absolute top-[85px] right-2 sm:top-[120px] sm:right-6 p-4 z-50">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -191,155 +207,163 @@ const DashboardV6 = () => {
                     </Button>
                 </div>
 
-                <div className="max-w-[1400px] w-full mx-auto px-6 py-6 flex flex-col items-center h-full relative">
+                {/* SCALED CONTENT CONTAINER (Scaling applied only on larger screens) */}
+                <div
+                    className="w-full h-full flex flex-col items-center overflow-y-auto sm:overflow-hidden"
+                    style={window.innerWidth > 1024 ? { transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' } : {}}
+                >
+                    <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center h-full relative">
 
-                    {/* 1. TOP LOGO SECTION */}
-                    <div className="flex flex-col items-center mb-6 shrink-0 pt-4">
-                        <img
-                            src={logo}
-                            alt="GoldSync"
-                            className="h-28 sm:h-36 w-auto object-contain mb-6 drop-shadow-[0_8px_24px_rgba(0,0,0,0.8)]"
-                        />
-                        <h1 className="text-3xl sm:text-4xl font-serif tracking-widest text-white font-medium mb-4 uppercase drop-shadow-lg">
-                            GoldSync
-                        </h1>
-                        <div className="w-32 h-1 bg-gradient-to-r from-transparent via-[#ab8c56] to-transparent opacity-50 mb-4" />
-                    </div>
-
-                    {prices.isWeekend && (
-                        <div className="flex justify-center mb-4">
-                            <MarketClosedBanner closeDate={prices.closeDate} variant="cinematic" />
+                        {/* 1. TOP LOGO SECTION */}
+                        <div className="flex flex-col items-center mb-4 sm:mb-6 shrink-0 pt-32 sm:pt-4">
+                            <img
+                                src={logo}
+                                alt="GoldSync"
+                                className="h-20 sm:h-36 w-auto object-contain mb-4 sm:mb-6 drop-shadow-[0_8px_24px_rgba(0,0,0,0.8)]"
+                            />
+                            <h1 className="text-3xl sm:text-4xl font-serif tracking-widest text-white font-medium mb-4 uppercase drop-shadow-lg">
+                                GoldSync
+                            </h1>
+                            <div className="w-32 h-1 bg-gradient-to-r from-transparent via-[#ab8c56] to-transparent opacity-50 mb-4" />
                         </div>
-                    )}
 
-                    {/* 2. SPOT PRICES - GLASS BOX */}
-                    <div className="w-full max-w-[1100px] bg-black/40 backdrop-blur-xl rounded-[2.5rem] border border-[#ab8c56]/30 p-8 mb-8 shadow-2xl">
-                        <div className="flex flex-col md:flex-row items-stretch justify-center gap-8 md:gap-16">
-
-                            {/* GOLD UNIT */}
-                            <div className={`flex flex-col items-center p-6 rounded-3xl ${getBlockStyle(currentGoldDiff)} flex-1 transition-all duration-700`}>
-                                <h2 className={`text-xs uppercase tracking-[0.4em] font-bold ${theme.goldText} mb-3`}>
-                                    Gold Spot (USD/OZ)
-                                </h2>
-                                {prices.loading || !prices.spot ? <Skeleton className="h-12 w-48 bg-white/5" /> : (
-                                    <div className="flex flex-col items-center">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-4xl sm:text-5xl font-sans font-bold text-white tracking-tighter">$</span>
-                                            <AnimatedNumber
-                                                value={prices.spot.goldSpotUSD}
-                                                decimals={2}
-                                                className="text-4xl sm:text-5xl font-sans font-bold tabular-nums text-white tracking-tighter"
-                                            />
-                                        </div>
-                                        {gTrend !== 'flat' && (
-                                            <div className={`mt-2 flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/10`}>
-                                                <span className={`text-lg font-bold ${gTrend === 'up' ? 'text-success' : 'text-destructive'}`}>
-                                                    {gTrend === 'up' ? '▲' : '▼'} {Math.abs(gSpotDiff).toFixed(2)}
-                                                </span>
-                                                <span className="text-xs text-white/50 tracking-widest font-bold">
-                                                    {Math.abs(prices.lastGoldPct).toFixed(2)}%
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* SILVER UNIT */}
-                            <div className={`flex flex-col items-center p-6 rounded-3xl ${getBlockStyle(currentSilverDiff)} flex-1 transition-all duration-700`}>
-                                <h2 className={`text-xs uppercase tracking-[0.4em] font-bold ${theme.goldText} mb-3`}>
-                                    Silver Spot (USD/OZ)
-                                </h2>
-                                {prices.loading || !prices.spot ? <Skeleton className="h-12 w-48 bg-white/5" /> : (
-                                    <div className="flex flex-col items-center">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-4xl sm:text-5xl font-sans font-bold text-white tracking-tighter">$</span>
-                                            <AnimatedNumber
-                                                value={prices.spot.silverSpotUSD}
-                                                decimals={3}
-                                                className="text-4xl sm:text-5xl font-sans font-bold tabular-nums text-white tracking-tighter"
-                                            />
-                                        </div>
-                                        {sTrend !== 'flat' && (
-                                            <div className={`mt-2 flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/10`}>
-                                                <span className={`text-lg font-bold ${sTrend === 'up' ? 'text-success' : 'text-destructive'}`}>
-                                                    {sTrend === 'up' ? '▲' : '▼'} {Math.abs(sSpotDiff).toFixed(2)}
-                                                </span>
-                                                <span className="text-xs text-white/50 tracking-widest font-bold">
-                                                    {Math.abs(prices.lastSilverPct).toFixed(2)}%
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 3. TABS MENU */}
-                    <div className="flex flex-wrap justify-center gap-6 sm:gap-12 mb-8 shrink-0 relative bg-black/20 backdrop-blur-md px-10 py-3 rounded-full border border-white/5">
-                        {sections.map(section => {
-                            const isActive = activeSection === section.key;
-                            return (
-                                <button
-                                    key={section.key}
-                                    onClick={() => setActiveSection(section.key)}
-                                    className={`text-xs sm:text-sm font-sans uppercase tracking-[0.25em] transition-all duration-500 relative pb-1 ${isActive
-                                        ? `text-white font-bold`
-                                        : `${theme.goldText} hover:text-white`
-                                        }`}
-                                >
-                                    {section.title}
-                                    {isActive && (
-                                        <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#ab8c56] rounded-full shadow-[0_0_10px_#ab8c56]" />
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* 4. PRODUCT GRID */}
-                    <div className="w-full max-w-[1200px] flex-1 min-h-0 overflow-y-auto custom-scrollbar px-2 pb-10">
-                        {prices.loading ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                                    <Skeleton key={i} className="h-44 w-full rounded-2xl bg-black/40 border border-white/5" />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                                {currentProducts.map((product) => (
-                                    <PriceCard
-                                        key={product.name}
-                                        product={product}
-                                        className="w-full bg-white/[0.03] backdrop-blur-2xl border-white/[0.08] hover:border-[#ab8c56]/40 transition-all duration-500 shadow-[0_12px_40px_-5px_rgba(0,0,0,0.4)] h-[170px]"
-                                    />
-                                ))}
+                        {prices.isWeekend && (
+                            <div className="flex justify-center mb-4">
+                                <MarketClosedBanner closeDate={prices.closeDate} variant="cinematic" />
                             </div>
                         )}
+
+                        {/* 2. SPOT PRICES - GLASS BOX */}
+                        <div className="w-full max-w-[1100px] bg-black/40 backdrop-blur-xl rounded-[1.5rem] sm:rounded-[2.5rem] border border-[#ab8c56]/30 p-4 sm:p-8 mb-6 sm:mb-8 shadow-2xl">
+                            <div className="flex flex-col md:flex-row items-stretch justify-center gap-4 sm:gap-8 md:gap-16">
+
+                                {/* GOLD UNIT */}
+                                <div className={`flex flex-col items-center p-4 sm:p-6 rounded-2xl sm:rounded-3xl ${getBlockStyle(currentGoldDiff)} flex-1 transition-all duration-700`}>
+                                    <h2 className={`text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.4em] font-bold ${theme.goldText} mb-2 sm:mb-3`}>
+                                        Gold Spot (USD/OZ)
+                                    </h2>
+                                    {prices.loading || !prices.spot ? <Skeleton className="h-10 sm:h-12 w-32 sm:w-48 bg-white/5" /> : (
+                                        <div className="flex flex-col items-center">
+                                            <div className="flex items-baseline gap-1 sm:gap-2">
+                                                <span className="text-2xl sm:text-5xl font-sans font-bold text-white tracking-tighter">$</span>
+                                                <AnimatedNumber
+                                                    value={prices.spot.goldSpotUSD}
+                                                    decimals={2}
+                                                    className="text-2xl sm:text-5xl font-sans font-bold tabular-nums text-white tracking-tighter"
+                                                />
+                                            </div>
+                                            {gTrend !== 'flat' && (
+                                                <div className={`mt-1 sm:mt-2 flex items-center gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-black/40 border border-white/10`}>
+                                                    <span className={`text-sm sm:text-lg font-bold ${gTrend === 'up' ? 'text-success' : 'text-destructive'}`}>
+                                                        {gTrend === 'up' ? '▲' : '▼'} {Math.abs(gSpotDiff).toFixed(2)}
+                                                    </span>
+                                                    <span className="text-[10px] sm:text-xs text-white/50 tracking-widest font-bold">
+                                                        {Math.abs(prices.lastGoldPct).toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* SILVER UNIT */}
+                                <div className={`flex flex-col items-center p-4 sm:p-6 rounded-2xl sm:rounded-3xl ${getBlockStyle(currentSilverDiff)} flex-1 transition-all duration-700`}>
+                                    <h2 className={`text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.4em] font-bold ${theme.goldText} mb-2 sm:mb-3`}>
+                                        Silver Spot (USD/OZ)
+                                    </h2>
+                                    {prices.loading || !prices.spot ? <Skeleton className="h-10 sm:h-12 w-32 sm:w-48 bg-white/5" /> : (
+                                        <div className="flex flex-col items-center">
+                                            <div className="flex items-baseline gap-1 sm:gap-2">
+                                                <span className="text-2xl sm:text-5xl font-sans font-bold text-white tracking-tighter">$</span>
+                                                <AnimatedNumber
+                                                    value={prices.spot.silverSpotUSD}
+                                                    decimals={3}
+                                                    className="text-2xl sm:text-5xl font-sans font-bold tabular-nums text-white tracking-tighter"
+                                                />
+                                            </div>
+                                            {sTrend !== 'flat' && (
+                                                <div className={`mt-1 sm:mt-2 flex items-center gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-black/40 border border-white/10`}>
+                                                    <span className={`text-sm sm:text-lg font-bold ${sTrend === 'up' ? 'text-success' : 'text-destructive'}`}>
+                                                        {sTrend === 'up' ? '▲' : '▼'} {Math.abs(sSpotDiff).toFixed(2)}
+                                                    </span>
+                                                    <span className="text-[10px] sm:text-xs text-white/50 tracking-widest font-bold">
+                                                        {Math.abs(prices.lastSilverPct).toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. TABS MENU */}
+                        <div className="w-full flex justify-center mb-8 shrink-0 px-4">
+                            <div className="flex flex-row overflow-x-auto no-scrollbar gap-4 sm:gap-12 bg-black/20 backdrop-blur-md px-6 sm:px-10 py-3 rounded-full border border-white/5 max-w-full">
+                                {sections.map(section => {
+                                    const isActive = activeSection === section.key;
+                                    return (
+                                        <button
+                                            key={section.key}
+                                            onClick={() => setActiveSection(section.key)}
+                                            className={`text-[10px] sm:text-sm font-sans uppercase tracking-[0.2em] sm:tracking-[0.25em] transition-all duration-500 relative pb-1 whitespace-nowrap ${isActive
+                                                ? `text-white font-bold`
+                                                : `${theme.goldText} hover:text-white`
+                                                }`}
+                                        >
+                                            {section.title}
+                                            {isActive && (
+                                                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#ab8c56] rounded-full shadow-[0_0_10px_#ab8c56]" />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* 4. PRODUCT GRID */}
+                        <div className="w-full max-w-[1200px] flex-1 min-h-0 overflow-y-auto custom-scrollbar px-2 pb-10">
+                            {prices.loading ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                                        <Skeleton key={i} className="h-44 w-full rounded-2xl bg-black/40 border border-white/5" />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                                    {currentProducts.map((product) => (
+                                        <PriceCard
+                                            key={product.name}
+                                            product={product}
+                                            className="w-full bg-white/[0.03] backdrop-blur-2xl border-white/[0.08] hover:border-[#ab8c56]/40 transition-all duration-500 shadow-[0_12px_40px_-5px_rgba(0,0,0,0.4)] h-[170px]"
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+
+                        {/* FOOTER */}
+                        <div className="w-full shrink-0 flex flex-col items-center pb-6">
+                            <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
+                            <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
+                                © GoldSync · Security & Precision · {now.getFullYear()}
+                            </p>
+                        </div>
+
                     </div>
+                </div>
 
-
-                    {/* FOOTER */}
-                    <div className="w-full shrink-0 flex flex-col items-center pb-6">
-                        <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
-                        <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
-                            © GoldSync · Security & Precision · {now.getFullYear()}
-                        </p>
+                {/* SIDE SLIDE INFO OVERLAY */}
+                <div className="absolute bottom-10 left-10 z-20 pointer-events-none hidden md:block">
+                    <div className="bg-black/40 backdrop-blur-xl border-l-4 border-primary p-6 rounded-tr-3xl">
+                        <p className="text-[10px] uppercase tracking-[0.4em] text-primary/80 mb-1 font-bold">Featured Asset</p>
+                        <h4 className="text-xl font-serif text-white uppercase tracking-wider">{backgroundSlides[slideIndex].title}</h4>
+                        <p className="text-xs text-[#ab8c56] tracking-[0.2em] uppercase mt-1 opacity-70">{backgroundSlides[slideIndex].subtitle}</p>
                     </div>
-
                 </div>
-            </div>
 
-            {/* SIDE SLIDE INFO OVERLAY */}
-            <div className="absolute bottom-10 left-10 z-20 pointer-events-none hidden md:block">
-                <div className="bg-black/40 backdrop-blur-xl border-l-4 border-primary p-6 rounded-tr-3xl">
-                    <p className="text-[10px] uppercase tracking-[0.4em] text-primary/80 mb-1 font-bold">Featured Asset</p>
-                    <h4 className="text-xl font-serif text-white uppercase tracking-wider">{backgroundSlides[slideIndex].title}</h4>
-                    <p className="text-xs text-[#ab8c56] tracking-[0.2em] uppercase mt-1 opacity-70">{backgroundSlides[slideIndex].subtitle}</p>
-                </div>
             </div>
-
         </div>
     );
 };
