@@ -225,10 +225,10 @@ const DashboardV6 = () => {
 
                 {/* SCALED CONTENT CONTAINER (Scaling applied only on larger screens) */}
                 <div
-                    className="w-full h-full flex flex-col items-center overflow-y-auto sm:overflow-hidden"
+                    className="w-full h-full flex flex-col items-center overflow-y-auto"
                     style={window.innerWidth > 1024 ? { transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' } : {}}
                 >
-                    <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center h-full relative">
+                    <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center min-h-full relative">
 
                         {/* 1. TOP LOGO SECTION */}
                         <div className="flex flex-col items-center mb-4 sm:mb-6 shrink-0 pt-32 sm:pt-4">
@@ -370,16 +370,16 @@ const DashboardV6 = () => {
                         <p className="text-xs text-[#ab8c56] tracking-[0.2em] uppercase mt-1 opacity-70">{backgroundSlides[slideIndex].subtitle}</p>
                     </div>
                 </div>
-
+                {/* FOOTER */}
+                <div className="w-full shrink-0 flex flex-col items-center pb-6">
+                    <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
+                    <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
+                        © GoldSync · Security & Precision · {now.getFullYear()}
+                    </p>
+                </div>
             </div>
 
-            {/* FOOTER */}
-            <div className="w-full shrink-0 flex flex-col items-center pb-6">
-                <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
-                <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
-                    © GoldSync · Security & Precision · {now.getFullYear()}
-                </p>
-            </div>
+
         </div>
     );
 };
