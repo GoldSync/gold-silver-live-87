@@ -168,12 +168,13 @@ const Index = () => {
         )}
 
         <div className="mt-12 flex flex-wrap justify-center gap-4 py-8 border-t border-border/30">
+          <a href="/v0" className="text-xs font-sans uppercase tracking-[0.2em] text-primary font-bold shadow-sm px-3 py-1 bg-primary/5 rounded-full border border-primary/20">V0 Global</a>
           <a href="/dashboard" className="text-xs font-sans uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">V1 Classic</a>
           <a href="/dashboard-v2" className="text-xs font-sans uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">V2 Modern</a>
           <a href="/dashboard-v3" className="text-xs font-sans uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">V3 Dark</a>
           <a href="/dashboard-v4" className="text-xs font-sans uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">V4 Premium</a>
           <a href="/dashboard-v5" className="text-xs font-sans uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">V5 Interactive</a>
-          <a href="/dashboard-v6" className="text-xs font-sans uppercase tracking-[0.2em] text-primary font-bold shadow-sm px-3 py-1 bg-primary/5 rounded-full border border-primary/20 transition-all hover:bg-primary/10">V6 Cinematic</a>
+          <a href="/" className="text-xs font-sans uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">V6 Cinematic</a>
         </div>
 
         <footer className="mt-8 pt-8 border-t border-border/50 text-center">

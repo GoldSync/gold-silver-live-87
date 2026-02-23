@@ -7,7 +7,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/hooks/useTheme';
 import { Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/goldsync_logo.png';
 import { MarketClosedBanner } from '@/components/MarketClosedBanner';
 import { DashboardLockOverlay } from '@/components/DashboardLockOverlay';
 
@@ -197,11 +197,11 @@ const DashboardV6 = () => {
                     <div className="flex flex-col items-center mb-6 shrink-0 pt-4">
                         <img
                             src={logo}
-                            alt="Swiss Precious Metals"
+                            alt="GoldSync"
                             className="h-28 sm:h-36 w-auto object-contain mb-6 drop-shadow-[0_8px_24px_rgba(0,0,0,0.8)]"
                         />
                         <h1 className="text-3xl sm:text-4xl font-serif tracking-widest text-white font-medium mb-4 uppercase drop-shadow-lg">
-                            Swiss Precious Metals
+                            GoldSync
                         </h1>
                         <div className="w-32 h-1 bg-gradient-to-r from-transparent via-[#ab8c56] to-transparent opacity-50 mb-4" />
                     </div>

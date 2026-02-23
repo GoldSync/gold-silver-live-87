@@ -68,7 +68,7 @@ async function sendErrorAlert(subject, message, type = 'general') {
     }
 }
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:6066').split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:6066').split(',').map(o => o.trim());
 
 app.use(cors({
     origin: function (origin, callback) {
