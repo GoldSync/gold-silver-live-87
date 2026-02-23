@@ -223,18 +223,12 @@ const DashboardV6 = () => {
                     </Button>
                 </div>
 
-                {/* SCALED CONTENT CONTAINER (Adaptive scaling for Laptops vs 4K TVs) */}
+                {/* SCALED CONTENT CONTAINER (Scaling applied only on larger screens) */}
                 <div
-                    className="w-full flex-1 flex flex-col items-center overflow-y-auto"
-                    style={
-                        window.innerWidth > 2000
-                            ? { transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' }
-                            : window.innerWidth > 1400
-                                ? { transform: 'scale(0.9)', transformOrigin: 'top center', width: '111.11%', height: '111.11%' }
-                                : {}
-                    }
+                    className="w-full h-full flex flex-col items-center overflow-y-auto sm:overflow-hidden"
+                    style={window.innerWidth > 1024 ? { transform: 'scale(0.8)', transformOrigin: 'top center', width: '125%', height: '125%' } : {}}
                 >
-                    <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center min-h-full relative overflow-x-hidden">
+                    <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center h-full relative">
 
                         {/* 1. TOP LOGO SECTION */}
                         <div className="flex flex-col items-center mb-4 sm:mb-6 shrink-0 pt-32 sm:pt-4">
@@ -256,8 +250,8 @@ const DashboardV6 = () => {
                         )}
 
                         {/* 2. SPOT PRICES - GLASS BOX */}
-                        <div className="w-full max-w-[1400px] bg-black/40 backdrop-blur-xl rounded-[1.5rem] sm:rounded-[2.5rem] border border-[#ab8c56]/30 p-4 sm:p-10 mb-12 sm:mb-16 shadow-2xl shrink-0">
-                            <div className="flex flex-col md:flex-row items-stretch justify-center gap-6 sm:gap-10 md:gap-20">
+                        <div className="w-full max-w-[1100px] bg-black/40 backdrop-blur-xl rounded-[1.5rem] sm:rounded-[2.5rem] border border-[#ab8c56]/30 p-4 sm:p-8 mb-6 sm:mb-8 shadow-2xl">
+                            <div className="flex flex-col md:flex-row items-stretch justify-center gap-4 sm:gap-8 md:gap-16">
 
                                 {/* GOLD UNIT */}
                                 <div className={`flex flex-col items-center p-4 sm:p-6 rounded-2xl sm:rounded-3xl ${getBlockStyle(currentGoldDiff)} flex-1 transition-all duration-700`}>
@@ -344,7 +338,7 @@ const DashboardV6 = () => {
                         </div>
 
                         {/* 4. PRODUCT GRID */}
-                        <div className="w-full max-w-[1400px] flex-1 min-h-0 overflow-y-visible px-2 pb-20">
+                        <div className="w-full max-w-[1200px] flex-1 min-h-0 overflow-y-auto custom-scrollbar px-2 pb-10">
                             {prices.loading ? (
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                     {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
@@ -352,19 +346,17 @@ const DashboardV6 = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 sm:gap-10">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                                     {currentProducts.map((product) => (
                                         <PriceCard
                                             key={product.name}
                                             product={product}
-                                            className="w-full bg-white/[0.03] backdrop-blur-2xl border-white/[0.08] hover:border-[#ab8c56]/40 transition-all duration-500 shadow-[0_12px_40px_-5px_rgba(0,0,0,0.4)] h-[140px]"
+                                            className="w-full bg-white/[0.03] backdrop-blur-2xl border-white/[0.08] hover:border-[#ab8c56]/40 transition-all duration-500 shadow-[0_12px_40px_-5px_rgba(0,0,0,0.4)] h-[170px]"
                                         />
                                     ))}
                                 </div>
                             )}
                         </div>
-
-
 
 
                     </div>
@@ -378,13 +370,15 @@ const DashboardV6 = () => {
                         <p className="text-xs text-[#ab8c56] tracking-[0.2em] uppercase mt-1 opacity-70">{backgroundSlides[slideIndex].subtitle}</p>
                     </div>
                 </div>
-                {/* FOOTER - Pushed to bottom */}
-                <div className="w-full shrink-0 flex flex-col items-center pb-6 mt-auto">
-                    <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
-                    <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
-                        © GoldSync · Security & Precision · {now.getFullYear()}
-                    </p>
-                </div>
+
+            </div>
+
+            {/* FOOTER */}
+            <div className="w-full shrink-0 flex flex-col items-center pb-6">
+                <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
+                <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
+                    © GoldSync · Security & Precision · {now.getFullYear()}
+                </p>
             </div>
         </div>
     );
