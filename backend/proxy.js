@@ -68,18 +68,32 @@ async function sendErrorAlert(subject, message, type = 'general') {
     }
 }
 
+app.use((req, res, next) => {
+    console.log(`[REQUEST] ${new Date().toLocaleTimeString()} ${req.method} ${req.url} (Origin: ${req.headers.origin || 'none'})`);
+    next();
+});
+
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:6066').split(',').map(o => o.trim());
 
 app.use(cors({
     origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            console.warn(`[CORS] Rejected origin: ${origin}`);
-            return callback(new Error('CORS policy restricted'), false);
+
+        // Trim and remove trailing slash for comparison
+        const cleanOrigin = origin.trim().replace(/\/$/, "");
+        const isAllowed = allowedOrigins.some(o => o.trim().replace(/\/$/, "") === cleanOrigin);
+
+        if (isAllowed) {
+            return callback(null, true);
+        } else {
+            console.warn(`[CORS] Blocking Origin: "${origin}" (Clean: "${cleanOrigin}") - Not in: ${allowedOrigins.join(', ')}`);
+            return callback(null, false);
         }
-        return callback(null, true);
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(helmet());
 app.use(express.json());
@@ -96,7 +110,7 @@ const authLimiter = rateLimit({
 // High-capacity limiter for price polling to ensure 1s updates are never blocked
 const priceLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5000, // Very high limit for real-time polling
+    max: 20000, // Increased for multiple users/tabs
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -104,7 +118,7 @@ const priceLimiter = rateLimit({
 // Moderate limiter for general API usage (settings, products, etc.)
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    max: 5000, // Increased to support real-time settings sync
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -209,6 +223,24 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+// Graceful Shutdown Handler
+const shutdown = async (signal) => {
+    console.log(`[SYSTEM] Received ${signal}. Shutting down gracefully...`);
+    if (browser) {
+        console.log('[SCRAPE] Closing browser...');
+        await browser.close().catch(() => { });
+    }
+    if (mongoose.connection.readyState === 1) {
+        console.log('[DB] Closing connection...');
+        await mongoose.connection.close();
+    }
+    console.log('[SYSTEM] Exit.');
+    process.exit(0);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 // Global Error Handlers
 process.on('uncaughtException', (err) => {
