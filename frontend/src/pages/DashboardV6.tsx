@@ -7,7 +7,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/hooks/useTheme';
 import { Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import logo from '@/assets/goldsync_logo.png';
+import logo from '@/assets/logo.png';
 import { MarketClosedBanner } from '@/components/MarketClosedBanner';
 import { DashboardLockOverlay } from '@/components/DashboardLockOverlay';
 import { TrialExpiredModal } from '@/components/TrialExpiredModal';
@@ -231,11 +231,11 @@ const DashboardV6 = () => {
                         <div className="flex flex-col items-center mb-4 sm:mb-6 shrink-0 pt-32 sm:pt-4">
                             <img
                                 src={logo}
-                                alt="GoldSync"
+                                alt="Swiss Precious Metals"
                                 className="h-20 sm:h-36 w-auto object-contain mb-4 sm:mb-6 drop-shadow-[0_8px_24px_rgba(0,0,0,0.8)]"
                             />
                             <h1 className="text-3xl sm:text-4xl font-serif tracking-widest text-white font-medium mb-4 uppercase drop-shadow-lg">
-                                GoldSync
+                                Swiss Precious Metals
                             </h1>
                             <div className="w-32 h-1 bg-gradient-to-r from-transparent via-[#ab8c56] to-transparent opacity-50 mb-4" />
                         </div>
@@ -371,7 +371,7 @@ const DashboardV6 = () => {
                 <div className="w-full shrink-0 flex flex-col items-center pb-6">
                     <div className="w-24 h-px bg-[#ab8c56]/30 mb-4" />
                     <p className="text-[10px] uppercase tracking-[0.5em] text-white/60 text-center">
-                        © GoldSync · Security & Precision · {now.getFullYear()}
+                        © Swiss Precious Metals · Security & Precision · {now.getFullYear()}
                     </p>
                 </div>
             </div>
