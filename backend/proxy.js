@@ -93,7 +93,7 @@ app.use(cors({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-fingerprint']
 }));
 app.use(helmet());
 app.use(express.json());
@@ -447,11 +447,15 @@ async function initBrowser() {
         console.log("Launching shared browser...");
         browser = await puppeteer.launch({
             headless: "new",
+            protocolTimeout: 300000, // 5 min protocol timeout to prevent Runtime.callFunctionOn timeout
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage', // Docker/Container fix
-                '--disable-gpu'
+                '--disable-gpu',
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--disable-background-timer-throttling'
             ],
             ignoreHTTPSErrors: true
         });
@@ -496,7 +500,28 @@ async function scrapeLoop() {
             if (!weekendClosingFetched) {
                 console.log('[WEEKEND] Market is closed. Fetching closing prices...');
 
-                // Try TradingView scrape first
+                // Priority 1: If we have fresh in-memory prices from the last live scrape, use them immediately
+                if (cachedPrices && cachedPrices.price > 0 && !cachedPrices.isWeekend) {
+                    console.log(`[WEEKEND] Using last live cached prices: Gold=$${cachedPrices.price}, Silver=$${cachedPrices.silver_price}`);
+                    cachedPrices = {
+                        ...cachedPrices,
+                        isWeekend: true,
+                        closeDate: `Friday Close · ${new Date(cachedPrices.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                    };
+                    // Also persist to MongoDB for restart resilience
+                    if (mongoose.connection.readyState === 1) {
+                        ClosingPrice.findOneAndUpdate({}, {
+                            gold_price: cachedPrices.price,
+                            silver_price: cachedPrices.silver_price,
+                            closeDate: cachedPrices.closeDate,
+                            scrapedAt: new Date()
+                        }, { upsert: true }).catch(() => {});
+                    }
+                    weekendClosingFetched = true;
+                    return;
+                }
+
+                // Priority 2: Try TradingView scrape
                 const tvData = await scrapeClosingPrices();
 
                 if (tvData) {
@@ -578,31 +603,37 @@ async function scrapeLoop() {
             throw new Error("Page was closed or detached");
         }
 
-        // Extract Gold
-        const goldData = await goldPage.evaluate(() => {
-            const getPrice = (selector) => {
-                const el = document.querySelector(selector);
-                return el ? parseFloat(el.innerText.trim().replace(/,/g, '')) : 0;
-            };
-            return {
-                price: getPrice('[data-price="XAUUSD"]'),
-                bid: getPrice('[data-price="XAUUSD_BID"]'),
-                ask: getPrice('[data-price="XAUUSD_ASK"]')
-            };
-        });
+        // Extract Gold (with timeout to prevent hanging)
+        const goldData = await Promise.race([
+            goldPage.evaluate(() => {
+                const getPrice = (selector) => {
+                    const el = document.querySelector(selector);
+                    return el ? parseFloat(el.innerText.trim().replace(/,/g, '')) : 0;
+                };
+                return {
+                    price: getPrice('[data-price="XAUUSD"]'),
+                    bid: getPrice('[data-price="XAUUSD_BID"]'),
+                    ask: getPrice('[data-price="XAUUSD_ASK"]')
+                };
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Gold evaluate timeout (30s)')), 30000))
+        ]);
 
-        // Extract Silver
-        const silverData = await silverPage.evaluate(() => {
-            const getPrice = (selector) => {
-                const el = document.querySelector(selector);
-                return el ? parseFloat(el.innerText.trim().replace(/,/g, '')) : 0;
-            };
-            return {
-                price: getPrice('[data-price="XAGUSD"]'),
-                bid: getPrice('[data-price="XAGUSD_BID"]'),
-                ask: getPrice('[data-price="XAGUSD_ASK"]')
-            };
-        });
+        // Extract Silver (with timeout to prevent hanging)
+        const silverData = await Promise.race([
+            silverPage.evaluate(() => {
+                const getPrice = (selector) => {
+                    const el = document.querySelector(selector);
+                    return el ? parseFloat(el.innerText.trim().replace(/,/g, '')) : 0;
+                };
+                return {
+                    price: getPrice('[data-price="XAGUSD"]'),
+                    bid: getPrice('[data-price="XAGUSD_BID"]'),
+                    ask: getPrice('[data-price="XAGUSD_ASK"]')
+                };
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Silver evaluate timeout (30s)')), 30000))
+        ]);
 
         // Update Cache
         if (goldData.price || silverData.price) {
@@ -629,6 +660,18 @@ async function scrapeLoop() {
                 isWeekend: false
             };
             consecutiveScrapeFailures = 0; // Reset on success
+
+            // Persist last live price to MongoDB so weekend fallback is always fresh
+            if (mongoose.connection.readyState === 1 && goldData.price > 0 && silverData.price > 0) {
+                ClosingPrice.findOneAndUpdate({}, {
+                    gold_price: goldData.price,
+                    silver_price: silverData.price,
+                    closeDate: new Date().toUTCString(),
+                    scrapedAt: new Date()
+                }, { upsert: true }).catch(err => {
+                    console.warn('[SCRAPE] Failed to persist live price to MongoDB:', err.message);
+                });
+            }
         } else {
             console.warn('[SCRAPE] Extracted values are 0 or null, keeping old cache.');
             consecutiveScrapeFailures++;
@@ -645,6 +688,9 @@ async function scrapeLoop() {
             console.error(`[SCRAPE] Max consecutive scrape failures reached. Restarting browser.`);
             if (browser) await browser.close().catch(() => { });
             browser = null; // Force re-initialization
+            goldPage = null;
+            silverPage = null;
+            consecutiveScrapeFailures = 0; // Reset so next cycle retries fresh
         }
     } finally {
         isScraping = false;

@@ -47,7 +47,6 @@ const backgroundSlides = [
     { image: pamp1ozImg, title: "999.9 Fine Gold", subtitle: "Investment Grade Bullion" },
     { image: pampSilverImg, title: "PAMP Silver", subtitle: "Pure Luster & Value" },
     { image: valcambi2Img, title: "Valcambi Cast", subtitle: "Purest Gold Standards" },
-    { image: globalCurrenciesImg, title: "Global Assets", subtitle: "Secure Your Future" }
 ];
 
 const DashboardV6 = () => {
