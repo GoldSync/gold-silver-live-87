@@ -98,13 +98,17 @@ app.use(cors({
 app.use(helmet());
 app.use(express.json());
 
+// Behind Nginx reverse proxy: use real client IP for rate limiting/logging
+app.set('trust proxy', 1);
+
 // Strict limiter for authentication & onboarding to prevent brute-force
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20, // Increased for development/demo safety
+    max: 60, // Allow normal admin usage while still blocking brute-force bursts
     message: { error: 'Too many attempts. Please try again in 15 minutes.' },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.method === 'OPTIONS',
 });
 
 // High-capacity limiter for price polling to ensure 1s updates are never blocked
@@ -113,6 +117,7 @@ const priceLimiter = rateLimit({
     max: 20000, // Increased for multiple users/tabs
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.method === 'OPTIONS',
 });
 
 // Moderate limiter for general API usage (settings, products, etc.)
@@ -121,6 +126,11 @@ const globalLimiter = rateLimit({
     max: 5000, // Increased to support real-time settings sync
     standardHeaders: true,
     legacyHeaders: false,
+    // Avoid double-counting requests already covered by dedicated limiters
+    skip: (req) => req.method === 'OPTIONS'
+        || req.path.startsWith('/api/auth/')
+        || req.path.startsWith('/api/onboarding/')
+        || req.path.startsWith('/api/prices'),
 });
 
 // Apply limiters to specific routes
