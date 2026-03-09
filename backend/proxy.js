@@ -174,7 +174,10 @@ const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     passwordHash: { type: String, required: true },
     adminName: { type: String, default: '' },
-    adminEmail: { type: String, default: '' }
+    adminEmail: { type: String, default: '' },
+    role: { type: String, enum: ['admin', 'super_admin'], default: 'admin' },
+    isActive: { type: Boolean, default: true },
+    createdAt: { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', userSchema);
 
@@ -244,6 +247,55 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+const requireSuperAdmin = (req, res, next) => {
+    if (req.user?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Super admin access required' });
+    }
+    next();
+};
+
+async function ensureSuperAdminUser() {
+    const superAdminUsername = (process.env.SUPER_ADMIN_USERNAME || '').trim();
+    const superAdminPassword = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
+    const superAdminName = (process.env.SUPER_ADMIN_NAME || 'Super Admin').trim();
+    const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || '').trim();
+
+    if (!superAdminUsername || !superAdminPassword) {
+        const existingSuperAdmin = await User.findOne({ role: 'super_admin' });
+        if (!existingSuperAdmin) {
+            const fallbackAdmin = await User.findOne({ username: 'admin' });
+            if (fallbackAdmin) {
+                fallbackAdmin.role = 'super_admin';
+                fallbackAdmin.isActive = true;
+                await fallbackAdmin.save();
+                console.log('[AUTH] Promoted default admin to super_admin (no SUPER_ADMIN_* env vars set).');
+            }
+        }
+        return;
+    }
+
+    let superAdmin = await User.findOne({ username: superAdminUsername });
+    if (!superAdmin) {
+        const hash = await bcrypt.hash(superAdminPassword, 10);
+        superAdmin = new User({
+            username: superAdminUsername,
+            passwordHash: hash,
+            adminName: superAdminName,
+            adminEmail: superAdminEmail,
+            role: 'super_admin',
+            isActive: true
+        });
+        await superAdmin.save();
+        console.log(`[AUTH] Seeded super admin user: ${superAdminUsername}`);
+        return;
+    }
+
+    if (superAdmin.role !== 'super_admin') {
+        superAdmin.role = 'super_admin';
+        await superAdmin.save();
+    }
+}
 
 const checkTrialStatus = async (req, res, next) => {
     // Skip trial check for internal/authenticated requests or certain paths
@@ -698,6 +750,8 @@ app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
 
     try {
+        await ensureSuperAdminUser();
+
         const userCount = await User.countDocuments();
         if (userCount === 0) {
             // No users exist - this happens before onboarding.
@@ -714,17 +768,20 @@ app.post('/api/auth/login', async (req, res) => {
 
         const user = await User.findOne({ username });
         if (!user) return res.status(400).json({ error: 'Invalid credentials' });
+        if (user.isActive === false) return res.status(403).json({ error: 'This admin account is disabled' });
 
         const validPassword = await bcrypt.compare(password, user.passwordHash);
         if (!validPassword) return res.status(400).json({ error: 'Invalid credentials' });
 
-        const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ id: user._id, username: user.username, role: user.role || 'admin' }, JWT_SECRET, { expiresIn: '24h' });
         console.log(`[LOGIN] User ${username} logged in. adminName: ${user.adminName}`);
         res.json({
             token,
+            id: user._id,
             username: user.username,
             adminName: user.adminName || '',
-            adminEmail: user.adminEmail || ''
+            adminEmail: user.adminEmail || '',
+            role: user.role || 'admin'
         });
     } catch (err) {
         res.status(500).json({ error: 'Server error', details: err.message });
@@ -765,6 +822,8 @@ app.post('/api/onboarding/complete', async (req, res) => {
         adminUser.adminName = adminName || '';
         adminUser.adminEmail = adminEmail || '';
         adminUser.passwordHash = hash;
+        adminUser.role = 'admin';
+        adminUser.isActive = true;
         await adminUser.save();
         console.log(`[ONBOARDING] Admin user updated. Name: ${adminUser.adminName}, Email: ${adminUser.adminEmail}`);
 
@@ -1007,6 +1066,89 @@ app.post('/api/system/factory-reset', authenticateToken, async (req, res) => {
         res.json({ success: true, message: 'System reset to factory defaults' });
     } catch (err) {
         res.status(500).json({ error: 'Factory reset failed', details: err.message });
+    }
+});
+
+app.get('/api/super-admin/users', authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+        const users = await User.find().select('_id username adminName adminEmail role isActive createdAt').sort({ createdAt: 1 }).lean();
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch admin users' });
+    }
+});
+
+app.post('/api/super-admin/users', authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+        const { username, password, adminName, adminEmail, role } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+
+        const existing = await User.findOne({ username });
+        if (existing) {
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+
+        const hash = await bcrypt.hash(password, 10);
+        const newUser = await new User({
+            username,
+            passwordHash: hash,
+            adminName: adminName || '',
+            adminEmail: adminEmail || '',
+            role: role === 'super_admin' ? 'super_admin' : 'admin',
+            isActive: true
+        }).save();
+
+        res.status(201).json({
+            _id: newUser._id,
+            username: newUser.username,
+            adminName: newUser.adminName,
+            adminEmail: newUser.adminEmail,
+            role: newUser.role,
+            isActive: newUser.isActive,
+            createdAt: newUser.createdAt
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to create admin user', details: err.message });
+    }
+});
+
+app.put('/api/super-admin/users/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+        const target = await User.findById(req.params.id);
+        if (!target) return res.status(404).json({ error: 'User not found' });
+
+        const { adminName, adminEmail, role, isActive, password } = req.body;
+
+        // Prevent accidental self lockout by current super admin
+        if (String(target._id) === String(req.user.id)) {
+            if (role && role !== 'super_admin') {
+                return res.status(400).json({ error: 'You cannot remove your own super admin role' });
+            }
+            if (isActive === false) {
+                return res.status(400).json({ error: 'You cannot disable your own account' });
+            }
+        }
+
+        if (adminName !== undefined) target.adminName = adminName;
+        if (adminEmail !== undefined) target.adminEmail = adminEmail;
+        if (role !== undefined) target.role = role === 'super_admin' ? 'super_admin' : 'admin';
+        if (isActive !== undefined) target.isActive = Boolean(isActive);
+        if (password) target.passwordHash = await bcrypt.hash(password, 10);
+
+        await target.save();
+        res.json({
+            _id: target._id,
+            username: target.username,
+            adminName: target.adminName,
+            adminEmail: target.adminEmail,
+            role: target.role,
+            isActive: target.isActive,
+            createdAt: target.createdAt
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update admin user', details: err.message });
     }
 });
 

@@ -101,7 +101,7 @@ function SpotMarginControl({ spotMargin, currentGoldSpot, updateSettings }: { sp
     );
 }
 
-function BusinessSettings({ currencyRate, marketOpenUTC, marketCloseUTC, updateSettings }: { currencyRate: number, marketOpenUTC: string, marketCloseUTC: string, updateSettings: (u: any) => Promise<boolean> }) {
+function BusinessSettings({ currencyRate, marketOpenUTC, marketCloseUTC, updateSettings, token }: { currencyRate: number, marketOpenUTC: string, marketCloseUTC: string, updateSettings: (u: any) => Promise<boolean>, token: string | null }) {
     const [rate, setRate] = useState(currencyRate.toString());
     const [open, setOpen] = useState(marketOpenUTC);
     const [close, setClose] = useState(marketCloseUTC);
@@ -125,7 +125,6 @@ function BusinessSettings({ currencyRate, marketOpenUTC, marketCloseUTC, updateS
 
     const handleTestAlert = async () => {
         try {
-            const { token } = JSON.parse(localStorage.getItem('adminAuth') || '{}');
             const res = await fetch(`${API_BASE_URL}/system/test-alert`, {
                 method: 'POST',
                 headers: {
@@ -197,19 +196,18 @@ function BusinessSettings({ currencyRate, marketOpenUTC, marketCloseUTC, updateS
                 >
                     <Bell className="w-4 h-4" />
                 </Button>
-                <RefreshClosingPricesButton />
+                <RefreshClosingPricesButton token={token} />
             </div>
         </div>
     );
 }
 
-function RefreshClosingPricesButton() {
+function RefreshClosingPricesButton({ token }: { token: string | null }) {
     const [loading, setLoading] = useState(false);
 
     const handleRefresh = async () => {
         setLoading(true);
         try {
-            const { token } = JSON.parse(localStorage.getItem('adminAuth') || '{}');
             const res = await fetch(`${API_BASE_URL}/system/refresh-closing-prices`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -240,8 +238,154 @@ function RefreshClosingPricesButton() {
     );
 }
 
+type AdminUser = {
+    _id: string;
+    username: string;
+    adminName: string;
+    adminEmail: string;
+    role: 'admin' | 'super_admin';
+    isActive: boolean;
+    createdAt: string;
+};
+
+function SuperAdminControls({ token, currentUserId }: { token: string | null, currentUserId: string | null }) {
+    const [users, setUsers] = useState<AdminUser[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [form, setForm] = useState({ username: '', password: '', adminName: '', adminEmail: '', role: 'admin' as 'admin' | 'super_admin' });
+
+    const fetchUsers = async () => {
+        if (!token) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/super-admin/users`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to load admin users');
+            const data = await res.json();
+            setUsers(data || []);
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to load admin users');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, [token]);
+
+    const createUser = async () => {
+        if (!form.username.trim() || !form.password.trim()) {
+            toast.error('Username and password are required');
+            return;
+        }
+
+        setCreating(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/super-admin/users`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(form)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to create admin user');
+
+            toast.success('Admin user created');
+            setForm({ username: '', password: '', adminName: '', adminEmail: '', role: 'admin' });
+            await fetchUsers();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to create admin user');
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const updateUser = async (userId: string, payload: Partial<AdminUser> & { password?: string }) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/super-admin/users/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to update user');
+            toast.success('Admin updated');
+            await fetchUsers();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to update user');
+        }
+    };
+
+    return (
+        <div className="lg:col-span-12 p-6 rounded-3xl border border-border/40 bg-card shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Super Admin</h3>
+                    <p className="font-bold text-lg text-foreground leading-none">Admin Account Control</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
+                    {loading ? 'Refreshing...' : 'Refresh'}
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+                <Input placeholder="username" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} />
+                <Input placeholder="password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+                <Input placeholder="display name" value={form.adminName} onChange={e => setForm(f => ({ ...f, adminName: e.target.value }))} />
+                <Input placeholder="email" value={form.adminEmail} onChange={e => setForm(f => ({ ...f, adminEmail: e.target.value }))} />
+                <div className="flex gap-2">
+                    <Select value={form.role} onValueChange={(v) => setForm(f => ({ ...f, role: v as 'admin' | 'super_admin' }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="super_admin">Super Admin</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={createUser} disabled={creating}>{creating ? '...' : 'Add'}</Button>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                {users.map(u => (
+                    <div key={u._id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 rounded-xl border border-border/40 p-3">
+                        <div>
+                            <p className="font-semibold text-sm">{u.username} <span className="text-xs text-muted-foreground">({u.role})</span></p>
+                            <p className="text-xs text-muted-foreground">{u.adminName || 'No name'} · {u.adminEmail || 'No email'} · {u.isActive ? 'Active' : 'Disabled'}</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateUser(u._id, { role: u.role === 'super_admin' ? 'admin' : 'super_admin' })}
+                                disabled={u._id === currentUserId && u.role === 'super_admin'}
+                            >
+                                {u.role === 'super_admin' ? 'Demote' : 'Promote'}
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={u.isActive ? 'destructive' : 'outline'}
+                                onClick={() => updateUser(u._id, { isActive: !u.isActive })}
+                                disabled={u._id === currentUserId}
+                            >
+                                {u.isActive ? 'Disable' : 'Enable'}
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function Admin() {
-    const { logout, isAuthenticated, adminName, adminEmail, token, updateProfile } = useAdminAuth();
+    const { logout, isAuthenticated, adminName, adminEmail, token, updateProfile, role, id } = useAdminAuth();
     const { products, addProduct, editProduct, deleteProduct } = useProducts();
     const { categoryTitles, margin, marginType, spotMargin, isLocked, currencyRate, marketOpenUTC, marketCloseUTC, updateSettings } = useSettings();
     const standardPrices = useGoldPrices();
@@ -636,8 +780,13 @@ export default function Admin() {
                                 marketOpenUTC={marketOpenUTC}
                                 marketCloseUTC={marketCloseUTC}
                                 updateSettings={updateSettings}
+                                token={token}
                             />
                         </div>
+
+                        {role === 'super_admin' && (
+                            <SuperAdminControls token={token} currentUserId={id} />
+                        )}
 
                         {/* Management Hub: Spot Control (Now Full Width below) */}
                         <div className="lg:col-span-12 p-6 rounded-3xl border border-primary/20 bg-primary/[0.03] shadow-sm flex flex-col justify-center">

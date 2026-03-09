@@ -46,7 +46,7 @@ export default function Login() {
                 throw new Error(data.error || 'Login failed');
             }
 
-            login(data.token, data.username, data.adminName, data.adminEmail);
+            login(data.token, data.id, data.username, data.adminName, data.adminEmail, data.role || 'admin');
             toast.success('Logged in successfully');
             navigate('/admin');
         } catch (err: any) {
