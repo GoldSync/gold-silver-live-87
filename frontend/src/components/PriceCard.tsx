@@ -28,7 +28,7 @@ export function PriceCard({ product, unit, className = '' }: PriceCardProps) {
       <div className="space-y-3">
         <div className="flex items-baseline justify-between">
           <span className="text-sm font-sans uppercase tracking-wider text-muted-foreground">QAR</span>
-          <AnimatedNumber value={qar} decimals={1} className="text-2xl font-sans font-bold tabular-nums text-foreground" />
+          <AnimatedNumber value={qar} decimals={0} className="text-2xl font-sans font-bold tabular-nums text-foreground" />
         </div>
         <div className="flex items-baseline justify-between">
           <span className="text-sm font-sans uppercase tracking-wider text-muted-foreground">USD</span>
