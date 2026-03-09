@@ -58,7 +58,8 @@ function calcProducts(
   goldStickyPct: number = 0,
   silverStickyPct: number = 0,
   customProducts: CustomProduct[] = [],
-  currencyRate: number = 3.65
+  currencyRate: number = 3.65,
+  includePremium: boolean = true
 ) {
   const goldPerGram = goldPerOz / TROY_OZ_GRAMS;
   const silverPerGram = silverPerOz / TROY_OZ_GRAMS;
@@ -79,21 +80,22 @@ function calcProducts(
 
     const baseWeight = custom.weight;
     const purity = custom.purity ?? 1.0;
+    const premium = includePremium ? custom.premium : 0;
 
     if (custom.category === 'goldBars' || custom.category === 'jewelry') {
       const grams = custom.weightUnit === 'oz' ? baseWeight * TROY_OZ_GRAMS : baseWeight;
-      priceUSD = (goldPerGram * purity * grams) + custom.premium;
-      prevPriceUSD = prevGoldPerGram ? (prevGoldPerGram * purity * grams) + custom.premium : null;
+      priceUSD = (goldPerGram * purity * grams) + premium;
+      prevPriceUSD = prevGoldPerGram ? (prevGoldPerGram * purity * grams) + premium : null;
     }
     else if (custom.category === 'goldCoins') {
       const oz = custom.weightUnit === 'g' ? baseWeight / TROY_OZ_GRAMS : baseWeight;
-      priceUSD = (goldPerOz * purity * oz) + custom.premium;
-      prevPriceUSD = prevGold ? (prevGold * purity * oz) + custom.premium : null;
+      priceUSD = (goldPerOz * purity * oz) + premium;
+      prevPriceUSD = prevGold ? (prevGold * purity * oz) + premium : null;
     }
     else if (custom.category === 'silverBars') {
       const grams = custom.weightUnit === 'oz' ? baseWeight * TROY_OZ_GRAMS : baseWeight;
-      priceUSD = (silverPerGram * purity * grams) + custom.premium;
-      prevPriceUSD = prevSilverPerGram ? (prevSilverPerGram * purity * grams) + custom.premium : null;
+      priceUSD = (silverPerGram * purity * grams) + premium;
+      prevPriceUSD = prevSilverPerGram ? (prevSilverPerGram * purity * grams) + premium : null;
     }
 
     const calculatedCustom: ProductPrice = {
@@ -143,7 +145,7 @@ export function useGoldPrices(options?: { manualOnly?: boolean }) {
   });
 
   const { products: customProducts } = useProducts();
-  const { spotMargin, currencyRate } = useSettings();
+  const { spotMargin, currencyRate, forceLiveMarketPricing } = useSettings();
   const customProductsRef = useRef(customProducts);
 
   useEffect(() => {
@@ -192,7 +194,7 @@ export function useGoldPrices(options?: { manualOnly?: boolean }) {
       const _isWeekend = data.isWeekend || false;
       const _closeDate = data.closeDate || null;
 
-      const FIXED_SPOT_MARGIN = spotMargin;
+      const FIXED_SPOT_MARGIN = forceLiveMarketPricing ? 0 : spotMargin;
       const displayGoldPrice = rawGoldPrice + FIXED_SPOT_MARGIN;
 
       const newSpot: PriceData = {
@@ -237,7 +239,8 @@ export function useGoldPrices(options?: { manualOnly?: boolean }) {
           newGoldPct,
           newSilverPct,
           customProductsRef.current,
-          currencyRate
+          currencyRate,
+          !forceLiveMarketPricing
         );
 
         return {
@@ -268,7 +271,7 @@ export function useGoldPrices(options?: { manualOnly?: boolean }) {
         error: "Failed to load prices"
       }));
     }
-  }, [spotMargin, currencyRate]);
+  }, [spotMargin, currencyRate, forceLiveMarketPricing]);
 
   useEffect(() => {
     fetchPrices();

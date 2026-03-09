@@ -204,6 +204,8 @@ const settingsSchema = new mongoose.Schema({
     spotMargin: { type: Number, default: 0 },
     isLocked: { type: Boolean, default: false },
     currencyRate: { type: Number, default: 3.65 },
+    forceLiveMarketPricing: { type: Boolean, default: false },
+    lockedAdminId: { type: String, default: '' },
     marketCloseUTC: { type: String, default: '20:58' }, // Friday 11:58 PM AST = 20:58 UTC
     marketOpenUTC: { type: String, default: '23:01' },  // Monday 2:01 AM AST = Sunday 23:01 UTC
 });
@@ -976,6 +978,12 @@ app.put('/api/settings', authenticateToken, async (req, res) => {
         if (req.body.currencyRate !== undefined) {
             settings.currencyRate = req.body.currencyRate;
         }
+        if (req.body.forceLiveMarketPricing !== undefined && req.user?.role === 'super_admin') {
+            settings.forceLiveMarketPricing = Boolean(req.body.forceLiveMarketPricing);
+        }
+        if (req.body.lockedAdminId !== undefined && req.user?.role === 'super_admin') {
+            settings.lockedAdminId = req.body.lockedAdminId || '';
+        }
         if (req.body.marketCloseUTC !== undefined) {
             settings.marketCloseUTC = req.body.marketCloseUTC;
         }
@@ -1151,6 +1159,47 @@ app.put('/api/super-admin/users/:id', authenticateToken, requireSuperAdmin, asyn
         });
     } catch (err) {
         res.status(500).json({ error: 'Failed to update admin user', details: err.message });
+    }
+});
+
+app.post('/api/super-admin/users/:id/lock', authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+        const { locked } = req.body;
+        const target = await User.findById(req.params.id);
+        if (!target) return res.status(404).json({ error: 'User not found' });
+        if (target.role !== 'admin') return res.status(400).json({ error: 'Only admin accounts can be locked here' });
+
+        target.isActive = !Boolean(locked);
+        await target.save();
+
+        let settings = await Settings.findOne();
+        if (!settings) settings = new Settings();
+
+        if (Boolean(locked)) {
+            settings.forceLiveMarketPricing = true;
+            settings.lockedAdminId = String(target._id);
+        } else if (settings.lockedAdminId === String(target._id)) {
+            settings.forceLiveMarketPricing = false;
+            settings.lockedAdminId = '';
+        }
+
+        await settings.save();
+
+        res.json({
+            success: true,
+            user: {
+                _id: target._id,
+                username: target.username,
+                role: target.role,
+                isActive: target.isActive
+            },
+            pricing: {
+                forceLiveMarketPricing: settings.forceLiveMarketPricing,
+                lockedAdminId: settings.lockedAdminId
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to lock/unlock admin', details: err.message });
     }
 });
 

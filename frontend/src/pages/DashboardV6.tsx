@@ -52,7 +52,7 @@ const backgroundSlides = [
 const DashboardV6 = () => {
     const { isDark, toggle } = useTheme();
     const prices = useGoldPrices();
-    const { categoryTitles, margin, marginType, isLocked, currencyRate } = useSettings();
+    const { categoryTitles, margin, marginType, isLocked, currencyRate, forceLiveMarketPricing } = useSettings();
 
     const sections = [
         { key: 'jewelry' as const, title: categoryTitles.jewelry },
@@ -106,10 +106,10 @@ const DashboardV6 = () => {
 
     const dataMap = useMemo(() => ({
         jewelry: prices.jewelry,
-        goldBars: applyMargin(prices.goldBars, margin, marginType, currencyRate),
-        goldCoins: applyMargin(prices.goldCoins, margin, marginType, currencyRate),
-        silverBars: applyMargin(prices.silverBars, margin, marginType, currencyRate),
-    }), [prices.jewelry, prices.goldBars, prices.goldCoins, prices.silverBars, margin, marginType, currencyRate]);
+        goldBars: applyMargin(prices.goldBars, forceLiveMarketPricing ? 0 : margin, marginType, currencyRate),
+        goldCoins: applyMargin(prices.goldCoins, forceLiveMarketPricing ? 0 : margin, marginType, currencyRate),
+        silverBars: applyMargin(prices.silverBars, forceLiveMarketPricing ? 0 : margin, marginType, currencyRate),
+    }), [prices.jewelry, prices.goldBars, prices.goldCoins, prices.silverBars, margin, marginType, currencyRate, forceLiveMarketPricing]);
 
     const currentProducts = dataMap[activeSection as keyof typeof dataMap];
 

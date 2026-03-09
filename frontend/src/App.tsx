@@ -14,6 +14,7 @@ import DashboardV5 from "./pages/DashboardV5";
 import DashboardV6 from "./pages/DashboardV6";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
+import SuperAdmin from "./pages/SuperAdmin";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/dashboard-v6" element={<DashboardV6 />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/super-admin" element={<SuperAdmin />} />
               <Route path="/setup" element={<Onboarding />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

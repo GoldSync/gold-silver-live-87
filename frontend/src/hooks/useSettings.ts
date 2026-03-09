@@ -26,6 +26,8 @@ export function useSettings() {
     const [marginType, setMarginType] = useState<'fixed' | 'percent'>('fixed');
     const [spotMargin, setSpotMargin] = useState<number>(2);
     const [isLocked, setIsLocked] = useState<boolean>(false);
+    const [forceLiveMarketPricing, setForceLiveMarketPricing] = useState<boolean>(false);
+    const [lockedAdminId, setLockedAdminId] = useState<string>('');
     const [currencyRate, setCurrencyRate] = useState<number>(3.65);
     const [marketCloseUTC, setMarketCloseUTC] = useState<string>('20:58');
     const [marketOpenUTC, setMarketOpenUTC] = useState<string>('23:01');
@@ -54,6 +56,8 @@ export function useSettings() {
                 if (data.marginType !== undefined) setMarginType(data.marginType);
                 if (data.spotMargin !== undefined) setSpotMargin(data.spotMargin);
                 if (data.isLocked !== undefined) setIsLocked(data.isLocked);
+                if (data.forceLiveMarketPricing !== undefined) setForceLiveMarketPricing(Boolean(data.forceLiveMarketPricing));
+                if (data.lockedAdminId !== undefined) setLockedAdminId(data.lockedAdminId || '');
                 if (data.currencyRate !== undefined) setCurrencyRate(data.currencyRate);
                 if (data.marketCloseUTC !== undefined) setMarketCloseUTC(data.marketCloseUTC);
                 if (data.marketOpenUTC !== undefined) setMarketOpenUTC(data.marketOpenUTC);
@@ -93,6 +97,8 @@ export function useSettings() {
         marginType?: 'fixed' | 'percent',
         spotMargin?: number,
         isLocked?: boolean,
+        forceLiveMarketPricing?: boolean,
+        lockedAdminId?: string,
         currencyRate?: number,
         marketCloseUTC?: string,
         marketOpenUTC?: string
@@ -118,5 +124,5 @@ export function useSettings() {
         }
     };
 
-    return { categoryTitles, margin, marginType, spotMargin, isLocked, currencyRate, marketCloseUTC, marketOpenUTC, loading, updateSettings };
+    return { categoryTitles, margin, marginType, spotMargin, isLocked, forceLiveMarketPricing, lockedAdminId, currencyRate, marketCloseUTC, marketOpenUTC, loading, updateSettings };
 }
