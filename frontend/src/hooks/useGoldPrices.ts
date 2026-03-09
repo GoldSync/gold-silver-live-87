@@ -25,6 +25,7 @@ export interface ProductPrice {
   stickyPct: number; // last non-zero percentage change
   trend: 'up' | 'down' | 'flat';
   weight: number; // weight in grams
+  marginOverride?: number | null;
 }
 
 export interface PriceState {
@@ -106,6 +107,7 @@ function calcProducts(
       stickyPct: (custom.category === 'silverBars') ? silverStickyPct : goldStickyPct,
       trend: (custom.category === 'silverBars') ? silverTrend : goldTrend,
       weight: custom.weightUnit === 'oz' ? baseWeight * TROY_OZ_GRAMS : baseWeight,
+      marginOverride: custom.marginOverride ?? null,
     };
 
     if (custom.category === 'goldBars') goldBars.push(calculatedCustom);

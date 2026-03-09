@@ -266,6 +266,7 @@ export default function Admin() {
     const [weight, setWeight] = useState('');
     const [weightUnit, setWeightUnit] = useState<string>('g');
     const [premium, setPremium] = useState('');
+    const [marginOverride, setMarginOverride] = useState('');
     const [purity, setPurity] = useState<string>('1.0');
 
     // Category Editing State
@@ -316,6 +317,7 @@ export default function Admin() {
             weight: parseFloat(weight),
             weightUnit,
             premium: parseFloat(premium) || 0,
+            marginOverride: marginOverride.trim() === '' ? null : (parseFloat(marginOverride) || 0),
             purity: parseFloat(purity) || 1.0
         };
 
@@ -331,6 +333,7 @@ export default function Admin() {
             setName('');
             setWeight('');
             setPremium('');
+            setMarginOverride('');
         }
     };
 
@@ -393,6 +396,7 @@ export default function Admin() {
         setName('');
         setWeight('');
         setPremium('');
+        setMarginOverride('');
         setWeightUnit(cat === 'goldCoins' || cat === 'silverBars' ? 'oz' : 'g');
         setPurity('1.0');
         setIsModalOpen(true);
@@ -406,6 +410,7 @@ export default function Admin() {
         setWeight(product.weight.toString());
         setWeightUnit(product.weightUnit);
         setPremium(product.premium?.toString() || '0');
+        setMarginOverride(product.marginOverride !== undefined && product.marginOverride !== null ? String(product.marginOverride) : '');
         setPurity((product.purity || 1.0).toString());
         setIsModalOpen(true);
     };
@@ -783,6 +788,24 @@ export default function Admin() {
                                 <p className="text-[11px] text-muted-foreground mt-1 leading-tight">Additional fixed dollar amount on top of the global margin.</p>
                             </div>
 
+                            {category !== 'jewelry' && (
+                                <div className="space-y-1.5">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-sm font-medium text-foreground/80">Per Product Global Margin Override</label>
+                                        <span className="text-xs text-muted-foreground">{marginType === 'fixed' ? 'USD/oz' : '%'}</span>
+                                    </div>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={marginOverride}
+                                        onChange={e => setMarginOverride(e.target.value)}
+                                        placeholder={marginType === 'fixed' ? `Use global ($${margin}/oz)` : `Use global (${margin}%)`}
+                                        className="bg-background/50 font-mono"
+                                    />
+                                    <p className="text-[11px] text-muted-foreground mt-1 leading-tight">Leave blank to use global margin. Set custom value for this product only.</p>
+                                </div>
+                            )}
+
                             {/* Live Calculation Preview */}
                             {(() => {
                                 const TROY_G = 31.1035;
@@ -793,6 +816,7 @@ export default function Admin() {
                                 const w = parseFloat(weight) || 0;
                                 const pur = parseFloat(purity) || 1.0;
                                 const prem = parseFloat(premium) || 0;
+                                const perProductMarginOverride = marginOverride.trim() === '' ? null : (parseFloat(marginOverride) || 0);
 
                                 if (w <= 0 || goldSpot === 0) return null;
 
@@ -812,11 +836,12 @@ export default function Admin() {
                                 // Global margin impact on this product
                                 let globalMarginUSD = 0;
                                 if (margin > 0 && category !== 'jewelry') {
+                                    const effectiveMargin = perProductMarginOverride !== null ? perProductMarginOverride : margin;
                                     const productWeightG = weightUnit === 'oz' ? w * TROY_G : w;
                                     if (marginType === 'fixed') {
-                                        globalMarginUSD = margin * (productWeightG / TROY_G);
+                                        globalMarginUSD = effectiveMargin * (productWeightG / TROY_G);
                                     } else {
-                                        globalMarginUSD = (baseUSD + prem) * (margin / 100);
+                                        globalMarginUSD = (baseUSD + prem) * (effectiveMargin / 100);
                                     }
                                 }
 
@@ -835,7 +860,7 @@ export default function Admin() {
                                             {category !== 'jewelry' && (
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-muted-foreground">
-                                                        + Global Margin ({marginType === 'fixed' ? `$${margin}/oz` : `${margin}%`})
+                                                        + Global Margin ({marginType === 'fixed' ? `$${(perProductMarginOverride !== null ? perProductMarginOverride : margin)}/oz` : `${(perProductMarginOverride !== null ? perProductMarginOverride : margin)}%`})
                                                     </span>
                                                     <span className={`font-mono font-semibold tabular-nums ${globalMarginUSD > 0 ? 'text-amber-500' : 'text-muted-foreground/50'}`}>
                                                         +${globalMarginUSD.toFixed(2)}

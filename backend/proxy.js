@@ -187,6 +187,9 @@ const productSchema = new mongoose.Schema({
     weight: { type: Number, required: true },
     weightUnit: { type: String, required: true }, // 'g' or 'oz'
     premium: { type: Number, default: 0 },
+    // Optional per-product override for global margin.
+    // Uses the same margin type configured in settings (fixed or percent).
+    marginOverride: { type: Number, default: null },
     purity: { type: Number, default: 1.0 },
     createdAt: { type: Date, default: Date.now }
 });

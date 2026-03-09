@@ -23,15 +23,18 @@ const TROY_OZ_GRAMS = 31.1035;
 
 type MarginType = 'fixed' | 'percent';
 
-function applyMargin(products: ProductPrice[], margin: number, type: MarginType, currencyRate: number): ProductPrice[] {
+function applyMargin(products: ProductPrice[], margin: number, type: MarginType, currencyRate: number, usePerProductOverride = true): ProductPrice[] {
     if (margin === 0) return products;
     return products.map(p => {
+        const effectiveMargin = usePerProductOverride && p.marginOverride !== null && p.marginOverride !== undefined
+            ? p.marginOverride
+            : margin;
         let marginAmount = 0;
         if (type === 'fixed') {
             const weightInOz = p.weight / TROY_OZ_GRAMS;
-            marginAmount = margin * weightInOz;
+            marginAmount = effectiveMargin * weightInOz;
         } else {
-            marginAmount = p.usd * (margin / 100);
+            marginAmount = p.usd * (effectiveMargin / 100);
         }
         return {
             ...p,
@@ -106,9 +109,9 @@ const DashboardV6 = () => {
 
     const dataMap = useMemo(() => ({
         jewelry: prices.jewelry,
-        goldBars: applyMargin(prices.goldBars, forceLiveMarketPricing ? 0 : margin, marginType, currencyRate),
-        goldCoins: applyMargin(prices.goldCoins, forceLiveMarketPricing ? 0 : margin, marginType, currencyRate),
-        silverBars: applyMargin(prices.silverBars, forceLiveMarketPricing ? 0 : margin, marginType, currencyRate),
+        goldBars: applyMargin(prices.goldBars, forceLiveMarketPricing ? 0 : margin, marginType, currencyRate, !forceLiveMarketPricing),
+        goldCoins: applyMargin(prices.goldCoins, forceLiveMarketPricing ? 0 : margin, marginType, currencyRate, !forceLiveMarketPricing),
+        silverBars: applyMargin(prices.silverBars, forceLiveMarketPricing ? 0 : margin, marginType, currencyRate, !forceLiveMarketPricing),
     }), [prices.jewelry, prices.goldBars, prices.goldCoins, prices.silverBars, margin, marginType, currencyRate, forceLiveMarketPricing]);
 
     const currentProducts = dataMap[activeSection as keyof typeof dataMap];

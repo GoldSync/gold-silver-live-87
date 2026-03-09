@@ -11,6 +11,7 @@ export interface CustomProduct {
     weight: number;
     weightUnit: string;
     premium: number;
+    marginOverride?: number | null;
     purity?: number;
 }
 
