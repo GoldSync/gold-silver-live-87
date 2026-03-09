@@ -1129,7 +1129,7 @@ app.put('/api/super-admin/users/:id', authenticateToken, requireSuperAdmin, asyn
         const target = await User.findById(req.params.id);
         if (!target) return res.status(404).json({ error: 'User not found' });
 
-        const { adminName, adminEmail, role, isActive, password } = req.body;
+        const { username, adminName, adminEmail, role, isActive, password } = req.body;
 
         // Prevent accidental self lockout by current super admin
         if (String(target._id) === String(req.user.id)) {
@@ -1143,6 +1143,24 @@ app.put('/api/super-admin/users/:id', authenticateToken, requireSuperAdmin, asyn
 
         if (adminName !== undefined) target.adminName = adminName;
         if (adminEmail !== undefined) target.adminEmail = adminEmail;
+
+        if (username !== undefined) {
+            const nextUsername = String(username).trim();
+            if (!nextUsername) {
+                return res.status(400).json({ error: 'Username cannot be empty' });
+            }
+            if (target.role !== 'admin') {
+                return res.status(400).json({ error: 'Only admin usernames can be changed here' });
+            }
+            if (nextUsername !== target.username) {
+                const exists = await User.findOne({ username: nextUsername });
+                if (exists) {
+                    return res.status(400).json({ error: 'Username already exists' });
+                }
+                target.username = nextUsername;
+            }
+        }
+
         if (role !== undefined) target.role = role === 'super_admin' ? 'super_admin' : 'admin';
         if (isActive !== undefined) target.isActive = Boolean(isActive);
         if (password) target.passwordHash = await bcrypt.hash(password, 10);

@@ -5,7 +5,6 @@ import { useSettings } from '@/hooks/useSettings';
 import { API_BASE_URL } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 type AdminUser = {
@@ -112,6 +111,38 @@ export default function SuperAdmin() {
         }
     };
 
+    const renameAdminUsername = async (user: AdminUser) => {
+        const nextUsername = window.prompt('Enter new username', user.username);
+        if (!nextUsername) return;
+
+        const trimmed = nextUsername.trim();
+        if (!trimmed) {
+            toast.error('Username cannot be empty');
+            return;
+        }
+
+        if (trimmed === user.username) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/super-admin/users/${user._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ username: trimmed })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to rename admin username');
+            toast.success('Admin username updated');
+            await fetchUsers();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to rename admin username');
+        }
+    };
+
     const lockAdminForLiveMarket = async (user: AdminUser, lock: boolean) => {
         try {
             const res = await fetch(`${API_BASE_URL}/super-admin/users/${user._id}/lock`, {
@@ -183,6 +214,15 @@ export default function SuperAdmin() {
                                 >
                                     {user.role === 'super_admin' ? 'Demote' : 'Promote'}
                                 </Button>
+                                {user.role === 'admin' && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => renameAdminUsername(user)}
+                                    >
+                                        Rename
+                                    </Button>
+                                )}
                                 {user.role === 'admin' && (
                                     <Button
                                         size="sm"
