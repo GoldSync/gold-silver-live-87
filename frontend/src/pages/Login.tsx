@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ export default function Login() {
     const [checkingSetup, setCheckingSetup] = useState(true);
     const { login } = useAdminAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     // Check if onboarding is done
     useEffect(() => {
@@ -48,7 +49,10 @@ export default function Login() {
 
             login(data.token, data.id, data.username, data.adminName, data.adminEmail, data.role || 'admin');
             toast.success('Logged in successfully');
-            navigate('/admin');
+            const params = new URLSearchParams(location.search);
+            const next = params.get('next');
+            const fallback = (data.role || 'admin') === 'super_admin' ? '/super-admin' : '/admin';
+            navigate(next || fallback);
         } catch (err: any) {
             toast.error(err.message);
         } finally {

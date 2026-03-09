@@ -30,7 +30,7 @@ export default function SuperAdmin() {
 
     useEffect(() => {
         if (!isAuthenticated) {
-            navigate('/login');
+            navigate('/login?next=/super-admin');
             return;
         }
         if (role !== 'super_admin') {
