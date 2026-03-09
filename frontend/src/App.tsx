@@ -14,7 +14,7 @@ import DashboardV5 from "./pages/DashboardV5";
 import DashboardV6 from "./pages/DashboardV6";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
-import SuperAdmin from "./pages/SuperAdmin";
+import SuperAdmin from "@/pages/SuperAdmin";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
