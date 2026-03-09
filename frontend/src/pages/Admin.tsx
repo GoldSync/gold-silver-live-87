@@ -24,7 +24,8 @@ import {
     Check,
     Settings as SettingsIcon,
     DollarSign,
-    ShieldAlert
+    ShieldAlert,
+    RefreshCw
 } from 'lucide-react';
 import { PriceCard } from '@/components/PriceCard';
 import { MarginSettings } from '@/components/MarginSettings';
@@ -196,8 +197,46 @@ function BusinessSettings({ currencyRate, marketOpenUTC, marketCloseUTC, updateS
                 >
                     <Bell className="w-4 h-4" />
                 </Button>
+                <RefreshClosingPricesButton />
             </div>
         </div>
+    );
+}
+
+function RefreshClosingPricesButton() {
+    const [loading, setLoading] = useState(false);
+
+    const handleRefresh = async () => {
+        setLoading(true);
+        try {
+            const { token } = JSON.parse(localStorage.getItem('adminAuth') || '{}');
+            const res = await fetch(`${API_BASE_URL}/system/refresh-closing-prices`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(`Closing prices updated: Gold=$${data.gold?.toFixed(2)}, Silver=$${data.silver?.toFixed(2)}`);
+            } else {
+                throw new Error(data.error || 'Failed');
+            }
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to refresh closing prices');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="h-10 px-3 hover:bg-primary/5 hover:text-primary transition-colors border-primary/20"
+            title="Refresh Closing Prices"
+        >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
     );
 }
 

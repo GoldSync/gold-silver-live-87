@@ -368,76 +368,56 @@ function isMarketOpen(settings) {
     return true;
 }
 
-async function scrapeClosingPrices() {
-    console.log('[WEEKEND] Scraping TradingView for closing prices...');
-    let tvPage = null;
+async function fetchClosingPrices() {
+    console.log('[WEEKEND] Fetching closing prices from TradingView Scanner API...');
     try {
-        await initBrowser();
-        tvPage = await browser.newPage();
-        await tvPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+        const fields = 'close,open,high,low,change,change_abs,description';
+        const ac = new AbortController();
+        const timeout = setTimeout(() => ac.abort(), 15000);
 
-        // Scrape Gold
-        await tvPage.goto('https://www.tradingview.com/symbols/XAUUSD/', { waitUntil: 'networkidle2', timeout: 30000 });
-        const goldData = await tvPage.evaluate(() => {
-            const priceEl = document.querySelector('.js-symbol-last');
-            const changeEl = document.querySelector('.js-symbol-change-direction');
-            const timeEl = document.querySelector('.js-symbol-lp-time');
-            const price = priceEl ? parseFloat(priceEl.innerText.trim().replace(/,/g, '')) : 0;
-            let changeText = '';
-            if (changeEl) {
-                const spans = changeEl.querySelectorAll('span');
-                changeText = spans.length > 1 ? spans[1].innerText.trim() : '';
-            }
-            const closeInfo = timeEl ? timeEl.innerText.trim() : '';
-            return { price, changeText, closeInfo };
-        });
+        const [goldRes, silverRes] = await Promise.all([
+            fetch(`https://scanner.tradingview.com/symbol?symbol=OANDA:XAUUSD&fields=${fields}`, { signal: ac.signal }),
+            fetch(`https://scanner.tradingview.com/symbol?symbol=OANDA:XAGUSD&fields=${fields}`, { signal: ac.signal })
+        ]);
+        clearTimeout(timeout);
 
-        // Scrape Silver
-        await tvPage.goto('https://www.tradingview.com/symbols/XAGUSD/', { waitUntil: 'networkidle2', timeout: 30000 });
-        const silverData = await tvPage.evaluate(() => {
-            const priceEl = document.querySelector('.js-symbol-last');
-            const changeEl = document.querySelector('.js-symbol-change-direction');
-            const price = priceEl ? parseFloat(priceEl.innerText.trim().replace(/,/g, '')) : 0;
-            let changeText = '';
-            if (changeEl) {
-                const spans = changeEl.querySelectorAll('span');
-                changeText = spans.length > 1 ? spans[1].innerText.trim() : '';
-            }
-            return { price, changeText };
-        });
+        if (!goldRes.ok || !silverRes.ok) {
+            console.error(`[WEEKEND] API returned errors: Gold=${goldRes.status}, Silver=${silverRes.status}`);
+            return null;
+        }
 
-        await tvPage.close();
-        tvPage = null;
+        const goldData = await goldRes.json();
+        const silverData = await silverRes.json();
 
-        if (goldData.price && silverData.price) {
-            console.log(`[WEEKEND] TradingView closing prices: Gold=$${goldData.price}, Silver=$${silverData.price}`);
-            console.log(`[WEEKEND] Close info: ${goldData.closeInfo}`);
+        const goldPrice = goldData.close;
+        const silverPrice = silverData.close;
+
+        if (goldPrice && silverPrice) {
+            const closeInfo = `Friday Close · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            console.log(`[WEEKEND] TradingView API closing prices: Gold=$${goldPrice}, Silver=$${silverPrice}`);
 
             // Persist to MongoDB
             if (mongoose.connection.readyState === 1) {
                 await ClosingPrice.findOneAndUpdate({}, {
-                    gold_price: goldData.price,
-                    silver_price: silverData.price,
-                    closeDate: goldData.closeInfo,
+                    gold_price: goldPrice,
+                    silver_price: silverPrice,
+                    closeDate: closeInfo,
                     scrapedAt: new Date()
                 }, { upsert: true });
             }
 
             return {
-                gold_price: goldData.price,
-                silver_price: silverData.price,
-                closeDate: goldData.closeInfo
+                gold_price: goldPrice,
+                silver_price: silverPrice,
+                closeDate: closeInfo
             };
         } else {
-            console.warn('[WEEKEND] TradingView scrape returned 0s');
+            console.warn('[WEEKEND] TradingView API returned invalid prices:', { goldPrice, silverPrice });
             return null;
         }
 
     } catch (error) {
-        console.error('[WEEKEND] TradingView scrape error:', error.message);
-        if (tvPage) {
-            try { await tvPage.close(); } catch (e) { }
-        }
+        console.error('[WEEKEND] TradingView API error:', error.message);
         return null;
     }
 }
@@ -521,8 +501,8 @@ async function scrapeLoop() {
                     return;
                 }
 
-                // Priority 2: Try TradingView scrape
-                const tvData = await scrapeClosingPrices();
+                // Priority 2: Try TradingView Scanner API
+                const tvData = await fetchClosingPrices();
 
                 if (tvData) {
                     cachedPrices = {
@@ -544,7 +524,7 @@ async function scrapeLoop() {
                     console.log('[WEEKEND] Closing prices cached successfully.');
                 } else {
                     // Fallback: try loading from MongoDB
-                    console.log('[WEEKEND] TradingView scrape failed, trying MongoDB...');
+                    console.log('[WEEKEND] TradingView API failed, trying MongoDB...');
                     if (mongoose.connection.readyState === 1) {
                         const saved = await ClosingPrice.findOne().sort({ scrapedAt: -1 });
                         if (saved) {
@@ -970,6 +950,37 @@ app.post('/api/system/test-alert', authenticateToken, async (req, res) => {
         res.json({ success: true, message: 'Test alert sent' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to send test alert' });
+    }
+});
+
+app.post('/api/system/refresh-closing-prices', authenticateToken, async (req, res) => {
+    try {
+        const result = await fetchClosingPrices();
+        if (result) {
+            // Update the in-memory cache too
+            cachedPrices = {
+                price: result.gold_price,
+                bid: result.gold_price,
+                ask: result.gold_price,
+                silver_price: result.silver_price,
+                silver_bid: result.silver_price,
+                silver_ask: result.silver_price,
+                price_gram_24k: result.gold_price / 31.1035,
+                price_gram_22k: (result.gold_price / 31.1035) * 0.916,
+                price_gram_21k: (result.gold_price / 31.1035) * 0.875,
+                price_gram_18k: (result.gold_price / 31.1035) * 0.750,
+                timestamp: new Date().toISOString(),
+                isWeekend: true,
+                closeDate: result.closeDate || 'Friday Close'
+            };
+            weekendClosingFetched = true;
+            res.json({ success: true, gold: result.gold_price, silver: result.silver_price, closeDate: result.closeDate });
+        } else {
+            res.status(500).json({ error: 'Failed to fetch closing prices from TradingView' });
+        }
+    } catch (err) {
+        console.error('[MANUAL REFRESH] Error:', err.message);
+        res.status(500).json({ error: 'Failed to refresh closing prices' });
     }
 });
 
