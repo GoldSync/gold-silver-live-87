@@ -1080,7 +1080,7 @@ app.get('/api/super-admin/users', authenticateToken, requireSuperAdmin, async (r
 
 app.post('/api/super-admin/users', authenticateToken, requireSuperAdmin, async (req, res) => {
     try {
-        const { username, password, adminName, adminEmail, role } = req.body;
+        const { username, password, adminName, adminEmail } = req.body;
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password are required' });
         }
@@ -1096,7 +1096,9 @@ app.post('/api/super-admin/users', authenticateToken, requireSuperAdmin, async (
             passwordHash: hash,
             adminName: adminName || '',
             adminEmail: adminEmail || '',
-            role: role === 'super_admin' ? 'super_admin' : 'admin',
+            // Creation endpoint always creates regular admins.
+            // Super admin role can only be granted via explicit promote action.
+            role: 'admin',
             isActive: true
         }).save();
 

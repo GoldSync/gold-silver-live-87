@@ -252,7 +252,7 @@ function SuperAdminControls({ token, currentUserId }: { token: string | null, cu
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(false);
     const [creating, setCreating] = useState(false);
-    const [form, setForm] = useState({ username: '', password: '', adminName: '', adminEmail: '', role: 'admin' as 'admin' | 'super_admin' });
+    const [form, setForm] = useState({ username: '', password: '', adminName: '', adminEmail: '' });
 
     const fetchUsers = async () => {
         if (!token) return;
@@ -295,7 +295,7 @@ function SuperAdminControls({ token, currentUserId }: { token: string | null, cu
             if (!res.ok) throw new Error(data.error || 'Failed to create admin user');
 
             toast.success('Admin user created');
-            setForm({ username: '', password: '', adminName: '', adminEmail: '', role: 'admin' });
+            setForm({ username: '', password: '', adminName: '', adminEmail: '' });
             await fetchUsers();
         } catch (err: any) {
             toast.error(err.message || 'Failed to create admin user');
@@ -341,14 +341,7 @@ function SuperAdminControls({ token, currentUserId }: { token: string | null, cu
                 <Input placeholder="display name" value={form.adminName} onChange={e => setForm(f => ({ ...f, adminName: e.target.value }))} />
                 <Input placeholder="email" value={form.adminEmail} onChange={e => setForm(f => ({ ...f, adminEmail: e.target.value }))} />
                 <div className="flex gap-2">
-                    <Select value={form.role} onValueChange={(v) => setForm(f => ({ ...f, role: v as 'admin' | 'super_admin' }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="super_admin">Super Admin</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Button onClick={createUser} disabled={creating}>{creating ? '...' : 'Add'}</Button>
+                    <Button onClick={createUser} disabled={creating} className="w-full">{creating ? '...' : 'Add Admin'}</Button>
                 </div>
             </div>
 
