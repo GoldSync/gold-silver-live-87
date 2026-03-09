@@ -20,7 +20,7 @@ type AdminUser = {
 
 export default function SuperAdmin() {
     const navigate = useNavigate();
-    const { isAuthenticated, token, role, id } = useAdminAuth();
+    const { initialized, isAuthenticated, token, role, id } = useAdminAuth();
     const { forceLiveMarketPricing, lockedAdminId } = useSettings();
 
     const [users, setUsers] = useState<AdminUser[]>([]);
@@ -29,6 +29,8 @@ export default function SuperAdmin() {
     const [form, setForm] = useState({ username: '', password: '', adminName: '', adminEmail: '' });
 
     useEffect(() => {
+        if (!initialized) return;
+
         if (!isAuthenticated) {
             navigate('/login?next=/super-admin');
             return;
@@ -37,7 +39,7 @@ export default function SuperAdmin() {
             toast.error('Super admin access required');
             navigate('/admin');
         }
-    }, [isAuthenticated, role, navigate]);
+    }, [initialized, isAuthenticated, role, navigate]);
 
     const fetchUsers = async () => {
         if (!token) return;

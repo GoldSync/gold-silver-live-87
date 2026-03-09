@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AdminAuthContextType {
+    initialized: boolean;
     token: string | null;
     id: string | null;
     username: string | null;
@@ -16,6 +17,7 @@ interface AdminAuthContextType {
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
+    const [initialized, setInitialized] = useState(false);
     const [token, setToken] = useState<string | null>(null);
     const [id, setId] = useState<string | null>(null);
     const [username, setUsername] = useState<string | null>(null);
@@ -38,6 +40,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
             setAdminEmail(storedEmail);
             setRole(storedRole);
         }
+        setInitialized(true);
     }, []);
 
     const login = (newToken: string, newId: string, newUsername: string, newAdminName: string, newAdminEmail: string, newRole: 'admin' | 'super_admin') => {
@@ -78,7 +81,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AdminAuthContext.Provider value={{ token, id, username, adminName, adminEmail, role, login, logout, updateProfile, isAuthenticated: !!token }}>
+        <AdminAuthContext.Provider value={{ initialized, token, id, username, adminName, adminEmail, role, login, logout, updateProfile, isAuthenticated: !!token }}>
             {children}
         </AdminAuthContext.Provider>
     );
