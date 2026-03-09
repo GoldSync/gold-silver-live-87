@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import puppeteer from 'puppeteer';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
@@ -8,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
+import { io } from 'socket.io-client';
 
 dotenv.config();
 
@@ -364,9 +364,10 @@ const checkTrialStatus = async (req, res, next) => {
 // Graceful Shutdown Handler
 const shutdown = async (signal) => {
     console.log(`[SYSTEM] Received ${signal}. Shutting down gracefully...`);
-    if (browser) {
-        console.log('[SCRAPE] Closing browser...');
-        await browser.close().catch(() => { });
+    if (liveSocket) {
+        console.log('[SOCKET] Closing live feed socket...');
+        liveSocket.close();
+        liveSocket = null;
     }
     if (mongoose.connection.readyState === 1) {
         console.log('[DB] Closing connection...');
@@ -389,16 +390,15 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Cache
 let cachedPrices = null;
-let lastReloadTime = 0;
 let isScraping = false;
 let weekendClosingFetched = false; // Track if we already scraped TradingView this weekend
+let marketOpenFlag = true;
 
-// Shared Browser
-let browser = null;
-let goldPage = null;
-let silverPage = null;
-let consecutiveScrapeFailures = 0;
-const MAX_SCRAPE_FAILURES = 5;
+// Live feed socket state
+let liveSocket = null;
+let lastSocketPriceAt = 0;
+let lastPersistAt = 0;
+const PERSIST_INTERVAL_MS = 15000;
 
 // ==========================================
 // MARKET HOURS + WEEKEND LOGIC
@@ -489,41 +489,86 @@ async function fetchClosingPrices() {
     }
 }
 
-async function initBrowser() {
-    if (!browser) {
-        console.log("Launching shared browser...");
-        browser = await puppeteer.launch({
-            headless: "new",
-            protocolTimeout: 300000, // 5 min protocol timeout to prevent Runtime.callFunctionOn timeout
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage', // Docker/Container fix
-                '--disable-gpu',
-                '--disable-extensions',
-                '--disable-background-networking',
-                '--disable-background-timer-throttling'
-            ],
-            ignoreHTTPSErrors: true
-        });
+function toNumber(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+}
 
-        goldPage = await browser.newPage();
-        await goldPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+function updateLiveCacheFromSocket(payload) {
+    if (!payload || !marketOpenFlag) return;
 
-        silverPage = await browser.newPage();
-        await silverPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    const goldPrice = toNumber(payload.XAUUSD);
+    const silverPrice = toNumber(payload.XAGUSD);
+    if (!goldPrice || !silverPrice) return;
 
-        const goldUrl = process.env.SCRAPE_URL_GOLD || 'https://www.livepriceofgold.com/usa-gold-price.html';
-        const silverUrl = process.env.SCRAPE_URL_SILVER || 'https://www.livepriceofgold.com/silver-price/us.html';
+    const oldPrice = cachedPrices?.price;
+    cachedPrices = {
+        price: goldPrice,
+        bid: goldPrice,
+        ask: goldPrice,
+        silver_price: silverPrice,
+        silver_bid: silverPrice,
+        silver_ask: silverPrice,
+        price_gram_24k: goldPrice / 31.1035,
+        price_gram_22k: (goldPrice / 31.1035) * 0.916,
+        price_gram_21k: (goldPrice / 31.1035) * 0.875,
+        price_gram_18k: (goldPrice / 31.1035) * 0.750,
+        timestamp: new Date().toISOString(),
+        isWeekend: false
+    };
 
-        console.log("Navigating tabs...");
-        await Promise.all([
-            goldPage.goto(goldUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }),
-            silverPage.goto(silverUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
-        ]);
-        console.log("Tabs ready.");
-        lastReloadTime = Date.now();
+    lastSocketPriceAt = Date.now();
+
+    if (goldPrice !== oldPrice) {
+        console.log(`[${new Date().toLocaleTimeString()}] SOCKET UPDATE: Gold=${goldPrice}, Silver=${silverPrice}`);
     }
+
+    if (mongoose.connection.readyState === 1 && (Date.now() - lastPersistAt) >= PERSIST_INTERVAL_MS) {
+        lastPersistAt = Date.now();
+        ClosingPrice.findOneAndUpdate({}, {
+            gold_price: goldPrice,
+            silver_price: silverPrice,
+            closeDate: new Date().toUTCString(),
+            scrapedAt: new Date()
+        }, { upsert: true }).catch(err => {
+            console.warn('[SOCKET] Failed to persist live price to MongoDB:', err.message);
+        });
+    }
+}
+
+function startLivePriceSocket() {
+    if (liveSocket) return;
+
+    console.log('[SOCKET] Connecting to live price feed...');
+    liveSocket = io('https://www.livepriceofgold.com', {
+        path: '/sio/p7012/socket.io',
+        transports: ['websocket', 'polling'],
+        timeout: 10000,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 10000
+    });
+
+    liveSocket.on('connect', () => {
+        console.log(`[SOCKET] Connected: ${liveSocket.id}`);
+    });
+
+    liveSocket.on('disconnect', (reason) => {
+        console.warn(`[SOCKET] Disconnected: ${reason}`);
+    });
+
+    liveSocket.on('connect_error', (err) => {
+        console.error('[SOCKET] Connect error:', err.message);
+    });
+
+    liveSocket.on('update', (message) => {
+        try {
+            const payload = typeof message === 'string' ? JSON.parse(message) : message;
+            updateLiveCacheFromSocket(payload);
+        } catch (err) {
+            console.warn('[SOCKET] Failed to parse update payload');
+        }
+    });
 }
 
 async function scrapeLoop() {
@@ -540,10 +585,12 @@ async function scrapeLoop() {
     }
 
     try {
+        marketOpenFlag = isMarketOpen(settings);
+
         // ==========================================
         // WEEKEND MODE: Serve frozen closing prices
         // ==========================================
-        if (!isMarketOpen(settings)) {
+        if (!marketOpenFlag) {
             if (!weekendClosingFetched) {
                 console.log('[WEEKEND] Market is closed. Fetching closing prices...');
 
@@ -626,123 +673,19 @@ async function scrapeLoop() {
         // Reset weekend flag when market reopens
         if (weekendClosingFetched) {
             weekendClosingFetched = false;
-            console.log('[WEEKDAY] Market reopened. Resuming live scraping...');
+            console.log('[WEEKDAY] Market reopened. Resuming live socket feed...');
         }
+        startLivePriceSocket();
 
-        await initBrowser();
-
-        const timestamp = Date.now();
-
-        // Safety: Full reload every 5 minutes (300000ms) to clear memory/stuck scripts
-        if (timestamp - lastReloadTime > 300000) {
-            console.log("Performing periodic page reload...");
-            await Promise.all([
-                goldPage.reload({ waitUntil: 'domcontentloaded', timeout: 30000 }),
-                silverPage.reload({ waitUntil: 'domcontentloaded', timeout: 30000 })
-            ]);
-            lastReloadTime = timestamp;
-        }
-
-        // Logic Change: DO NOT RELOAD EVERY TIME!
-        // Just read the DOM. The site updates via JS WebSocket/Long-polling.
-
-        if (goldPage.isClosed() || silverPage.isClosed()) {
-            throw new Error("Page was closed or detached");
-        }
-
-        // Extract Gold (with timeout to prevent hanging)
-        const goldData = await Promise.race([
-            goldPage.evaluate(() => {
-                const getPrice = (selector) => {
-                    const el = document.querySelector(selector);
-                    return el ? parseFloat(el.innerText.trim().replace(/,/g, '')) : 0;
-                };
-                return {
-                    price: getPrice('[data-price="XAUUSD"]'),
-                    bid: getPrice('[data-price="XAUUSD_BID"]'),
-                    ask: getPrice('[data-price="XAUUSD_ASK"]')
-                };
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Gold evaluate timeout (30s)')), 30000))
-        ]);
-
-        // Extract Silver (with timeout to prevent hanging)
-        const silverData = await Promise.race([
-            silverPage.evaluate(() => {
-                const getPrice = (selector) => {
-                    const el = document.querySelector(selector);
-                    return el ? parseFloat(el.innerText.trim().replace(/,/g, '')) : 0;
-                };
-                return {
-                    price: getPrice('[data-price="XAGUSD"]'),
-                    bid: getPrice('[data-price="XAGUSD_BID"]'),
-                    ask: getPrice('[data-price="XAGUSD_ASK"]')
-                };
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Silver evaluate timeout (30s)')), 30000))
-        ]);
-
-        // Update Cache
-        if (goldData.price || silverData.price) {
-            // Only log if values changed (reduce noise)
-            const oldPrice = cachedPrices ? cachedPrices.price : 0;
-            if (goldData.price !== oldPrice) {
-                console.log(`[${new Date().toLocaleTimeString()}] PRICE UPDATE: Gold=${goldData.price}, Silver=${silverData.price}`);
-            } else {
-                console.log("No change..."); // Optional debug
-            }
-
-            cachedPrices = {
-                price: goldData.price,
-                bid: goldData.bid,
-                ask: goldData.ask,
-                silver_price: silverData.price,
-                silver_bid: silverData.bid,
-                silver_ask: silverData.ask,
-                price_gram_24k: goldData.price / 31.1035,
-                price_gram_22k: (goldData.price / 31.1035) * 0.916,
-                price_gram_21k: (goldData.price / 31.1035) * 0.875,
-                price_gram_18k: (goldData.price / 31.1035) * 0.750,
-                timestamp: new Date().toISOString(),
-                isWeekend: false
-            };
-            consecutiveScrapeFailures = 0; // Reset on success
-
-            // Persist last live price to MongoDB so weekend fallback is always fresh
-            if (mongoose.connection.readyState === 1 && goldData.price > 0 && silverData.price > 0) {
-                ClosingPrice.findOneAndUpdate({}, {
-                    gold_price: goldData.price,
-                    silver_price: silverData.price,
-                    closeDate: new Date().toUTCString(),
-                    scrapedAt: new Date()
-                }, { upsert: true }).catch(err => {
-                    console.warn('[SCRAPE] Failed to persist live price to MongoDB:', err.message);
-                });
-            }
-        } else {
-            console.warn('[SCRAPE] Extracted values are 0 or null, keeping old cache.');
-            consecutiveScrapeFailures++;
+        if ((Date.now() - lastSocketPriceAt) > 30000) {
+            console.warn('[SOCKET] No live update received for >30s; waiting for reconnect/update...');
         }
     } catch (error) {
         console.error('[SCRAPE] Error during scrape loop:', error.message);
-        consecutiveScrapeFailures++;
-        if (consecutiveScrapeFailures >= MAX_SCRAPE_FAILURES) {
-            sendErrorAlert(
-                'Live Scraper Failure',
-                `The live gold/silver price scraper has failed ${consecutiveScrapeFailures} times in a row. Final check: ${error.message}`,
-                'scrape-fail'
-            );
-            console.error(`[SCRAPE] Max consecutive scrape failures reached. Restarting browser.`);
-            if (browser) await browser.close().catch(() => { });
-            browser = null; // Force re-initialization
-            goldPage = null;
-            silverPage = null;
-            consecutiveScrapeFailures = 0; // Reset so next cycle retries fresh
-        }
     } finally {
         isScraping = false;
         // Weekend: poll every 60s; Weekday: poll every 1s
-        const nextInterval = isMarketOpen(settings) ? 1000 : 60000;
+        const nextInterval = marketOpenFlag ? 1000 : 60000;
         setTimeout(scrapeLoop, nextInterval);
     }
 }
@@ -1266,7 +1209,7 @@ app.get('/api/prices', checkTrialStatus, (req, res) => {
 
 // Root
 app.get('/', (req, res) => {
-    res.send('Gold Price Proxy (Realtime DOM Polling) Running! Data is cached in background.');
+    res.send('Gold Price Proxy (Realtime Socket Feed) Running! Data is cached in background.');
 });
 
 // Start Server
@@ -1274,7 +1217,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Proxy server running on port ${PORT} (0.0.0.0)`);
     console.log(`Local Access: http://localhost:${PORT}`);
     console.log(`Network Access: http://192.168.18.229:${PORT}`);
-    console.log("Starting scrape loop...");
+    console.log("Starting market feed supervisor loop...");
     // Start scraping AFTER server is listening
     scrapeLoop();
 });
