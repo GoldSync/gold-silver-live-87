@@ -268,6 +268,7 @@ export default function Admin() {
     const [premium, setPremium] = useState('');
     const [marginOverride, setMarginOverride] = useState('');
     const [purity, setPurity] = useState<string>('1.0');
+    const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
 
     // Category Editing State
     const [editingCategory, setEditingCategory] = useState<string | null>(null);
@@ -309,6 +310,7 @@ export default function Admin() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmittingProduct) return;
         if (!name || !weight) return toast.error('Name and Weight required');
 
         const payload = {
@@ -321,19 +323,24 @@ export default function Admin() {
             purity: parseFloat(purity) || 1.0
         };
 
-        let success;
-        if (modalMode === 'edit' && editingId) {
-            success = await editProduct(editingId, payload);
-        } else {
-            success = await addProduct(payload);
-        }
+        setIsSubmittingProduct(true);
+        try {
+            let success;
+            if (modalMode === 'edit' && editingId) {
+                success = await editProduct(editingId, payload);
+            } else {
+                success = await addProduct(payload);
+            }
 
-        if (success) {
-            setIsModalOpen(false);
-            setName('');
-            setWeight('');
-            setPremium('');
-            setMarginOverride('');
+            if (success) {
+                setIsModalOpen(false);
+                setName('');
+                setWeight('');
+                setPremium('');
+                setMarginOverride('');
+            }
+        } finally {
+            setIsSubmittingProduct(false);
         }
     };
 
@@ -700,10 +707,11 @@ export default function Admin() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-card w-full max-w-md p-6 rounded-2xl shadow-2xl border border-border ring-1 ring-white/10 relative pb-8">
 
-                        <Button
+                            <Button
                             variant="ghost"
                             size="icon"
                             className="absolute top-4 right-4 rounded-full w-8 h-8 text-muted-foreground hover:bg-secondary"
+                                disabled={isSubmittingProduct}
                             onClick={() => setIsModalOpen(false)}
                         >
                             ✕
@@ -809,7 +817,7 @@ export default function Admin() {
                             {/* Live Calculation Preview */}
                             {(() => {
                                 const TROY_G = 31.1035;
-                                const QAR = 3.65;
+                                const QAR = currencyRate;
                                 const goldSpot = standardPrices.spot?.goldSpotUSD ?? 0;
                                 const silverSpot = standardPrices.spot?.silverSpotUSD ?? 0;
 
@@ -886,9 +894,9 @@ export default function Admin() {
                             })()}
 
                             <div className="pt-4 flex gap-3">
-                                <Button type="button" variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                                <Button type="submit" className="flex-1 gap-2 shadow-lg shadow-primary/20 bg-primary text-primary-foreground">
-                                    {modalMode === 'add' ? 'Create Asset' : 'Save Changes'}
+                                <Button type="button" variant="outline" className="flex-1" disabled={isSubmittingProduct} onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                                <Button type="submit" disabled={isSubmittingProduct} className="flex-1 gap-2 shadow-lg shadow-primary/20 bg-primary text-primary-foreground">
+                                    {isSubmittingProduct ? (modalMode === 'add' ? 'Creating...' : 'Saving...') : (modalMode === 'add' ? 'Create Asset' : 'Save Changes')}
                                 </Button>
                             </div>
                         </form>

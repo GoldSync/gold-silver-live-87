@@ -83,7 +83,7 @@ export function useProducts() {
                 body: JSON.stringify(product)
             });
             if (!res.ok) throw new Error('Failed to add product');
-            await fetchProducts();
+            fetchProducts(true);
             window.dispatchEvent(new Event(EVENT_PRODUCTS_CHANGED));
             toast.success('Product added successfully');
             return true;
@@ -105,7 +105,7 @@ export function useProducts() {
                 body: JSON.stringify(updates)
             });
             if (!res.ok) throw new Error('Failed to update product');
-            await fetchProducts();
+            fetchProducts(true);
             window.dispatchEvent(new Event(EVENT_PRODUCTS_CHANGED));
             toast.success('Product updated successfully');
             return true;
@@ -125,7 +125,7 @@ export function useProducts() {
                 }
             });
             if (!res.ok) throw new Error('Failed to delete product');
-            await fetchProducts();
+            fetchProducts(true);
             window.dispatchEvent(new Event(EVENT_PRODUCTS_CHANGED));
             toast.success('Product deleted successfully');
             return true;

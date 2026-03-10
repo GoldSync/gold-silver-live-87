@@ -293,6 +293,39 @@ export function useGoldPrices(options?: { manualOnly?: boolean }) {
     }
   }, [fetchPrices, options?.manualOnly]);
 
+  useEffect(() => {
+    if (!state.spot) return;
+
+    const products = calcProducts(
+      state.spot.goldSpotUSD,
+      state.spot.silverSpotUSD,
+      state.previousSpot?.goldSpotUSD ?? null,
+      state.previousSpot?.silverSpotUSD ?? null,
+      state.lastGoldTrend,
+      state.lastSilverTrend,
+      state.lastGoldPct,
+      state.lastSilverPct,
+      customProducts,
+      currencyRate,
+      !forceLiveMarketPricing
+    );
+
+    setState(prev => ({
+      ...prev,
+      ...products
+    }));
+  }, [
+    customProducts,
+    currencyRate,
+    forceLiveMarketPricing,
+    state.spot,
+    state.previousSpot,
+    state.lastGoldTrend,
+    state.lastSilverTrend,
+    state.lastGoldPct,
+    state.lastSilverPct
+  ]);
+
   return {
     ...state,
     refresh: () => fetchPrices(true)
