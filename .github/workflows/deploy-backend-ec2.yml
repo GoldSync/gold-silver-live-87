@@ -23,8 +23,10 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "backend/**"
+          source: "backend"
           target: "/home/ubuntu/gold-silver-live-87"
+          rm: true # Clean old backend files before upload
+          strip_components: 0 # Keep 'backend/' folder structure
 
       - name: Install deps and restart PM2
         uses: appleboy/ssh-action@v1.0.3
