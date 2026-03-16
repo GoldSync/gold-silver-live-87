@@ -17,13 +17,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Ensure target directory exists
+      - name: Remote diagnostics and directory prep
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: mkdir -p /home/ubuntu/gold-silver-live-87/backend
+          script: |
+            echo "Checking disk space:"
+            df -h /home/ubuntu
+            echo "Checking permissions:"
+            mkdir -p /home/ubuntu/gold-silver-live-87/backend
+            ls -ld /home/ubuntu/gold-silver-live-87/backend
+            id
 
       - name: Upload backend files to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -31,9 +37,10 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "backend/*"
-          target: "/home/ubuntu/gold-silver-live-87/backend"
-          strip_components: 1 # Removes 'backend/' prefix from source
+          source: "backend"
+          target: "/home/ubuntu/gold-silver-live-87"
+          overwrite: true
+          debug: true
 
       - name: Install deps and restart PM2
         uses: appleboy/ssh-action@v1.0.3
