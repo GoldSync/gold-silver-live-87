@@ -31,6 +31,7 @@ export function useSettings() {
     const [currencyRate, setCurrencyRate] = useState<number>(3.65);
     const [marketCloseUTC, setMarketCloseUTC] = useState<string>('20:58');
     const [marketOpenUTC, setMarketOpenUTC] = useState<string>('23:01');
+    const [trialEnabled, setTrialEnabled] = useState<boolean>(true);
     const [loading, setLoading] = useState(true);
 
     const fetchSettings = useCallback(async (silent = false) => {
@@ -61,6 +62,7 @@ export function useSettings() {
                 if (data.currencyRate !== undefined) setCurrencyRate(data.currencyRate);
                 if (data.marketCloseUTC !== undefined) setMarketCloseUTC(data.marketCloseUTC);
                 if (data.marketOpenUTC !== undefined) setMarketOpenUTC(data.marketOpenUTC);
+                if (data.trialEnabled !== undefined) setTrialEnabled(Boolean(data.trialEnabled));
             }
         } catch (err: any) {
             console.error(err);
@@ -101,7 +103,8 @@ export function useSettings() {
         lockedAdminId?: string,
         currencyRate?: number,
         marketCloseUTC?: string,
-        marketOpenUTC?: string
+        marketOpenUTC?: string,
+        trialEnabled?: boolean
     }) => {
         try {
             const res = await fetch(`${API_BASE_URL}/settings`, {
@@ -124,5 +127,10 @@ export function useSettings() {
         }
     };
 
-    return { categoryTitles, margin, marginType, spotMargin, isLocked, forceLiveMarketPricing, lockedAdminId, currencyRate, marketCloseUTC, marketOpenUTC, loading, updateSettings };
+    return { 
+        categoryTitles, margin, marginType, spotMargin, isLocked, 
+        forceLiveMarketPricing, lockedAdminId, currencyRate, 
+        marketCloseUTC, marketOpenUTC, trialEnabled, loading, 
+        updateSettings, refreshSettings: fetchSettings 
+    };
 }

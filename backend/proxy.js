@@ -211,6 +211,7 @@ const settingsSchema = new mongoose.Schema({
     lockedAdminId: { type: String, default: '' },
     marketCloseUTC: { type: String, default: '20:58' }, // Friday 11:58 PM AST = 20:58 UTC
     marketOpenUTC: { type: String, default: '23:01' },  // Monday 2:01 AM AST = Sunday 23:01 UTC
+    trialEnabled: { type: Boolean, default: true },
 });
 const Settings = mongoose.model('Settings', settingsSchema);
 
@@ -235,6 +236,8 @@ const visitorSchema = new mongoose.Schema({
     firstSeen: { type: Date, default: Date.now },
     isExtended: { type: Boolean, default: false },
     extendedAt: { type: Date, default: null },
+    expiredAt: { type: Date, default: null },
+    isWhitelisted: { type: Boolean, default: false },
     name: { type: String, default: '' },
     email: { type: String, default: '' }, // Could be phone or email
     lastSeen: { type: Date, default: Date.now }
@@ -307,6 +310,16 @@ const checkTrialStatus = async (req, res, next) => {
     if (req.headers['authorization']) return next();
     if (req.path.includes('/auth/') || req.path.includes('/onboarding/')) return next();
 
+    // 1. Check if trial system is globally enabled
+    let settings = null;
+    try {
+        settings = await Settings.findOne();
+    } catch (e) {}
+    
+    if (settings && settings.trialEnabled === false) {
+        return next();
+    }
+
     const fingerprint = req.headers['x-fingerprint'];
     if (!fingerprint) {
         // We don't block yet if no fingerprint (for backward compatibility), 
@@ -322,6 +335,9 @@ const checkTrialStatus = async (req, res, next) => {
             return next();
         }
 
+        // Whitelisted devices have unlimited access
+        if (visitor.isWhitelisted) return next();
+
         // Update last seen
         visitor.lastSeen = new Date();
         await visitor.save();
@@ -336,6 +352,10 @@ const checkTrialStatus = async (req, res, next) => {
         if (isInitialTrialOver) {
             // Initial trial over, check if extended
             if (!visitor.isExtended) {
+                if (!visitor.expiredAt) {
+                    visitor.expiredAt = now;
+                    await visitor.save();
+                }
                 return res.status(402).json({
                     error: 'Trial Expired',
                     code: 'TRIAL_EXPIRED_INITIAL',
@@ -346,12 +366,22 @@ const checkTrialStatus = async (req, res, next) => {
             // check if extension is also over
             const isExtensionOver = (now - visitor.extendedAt) > threeDaysMs;
             if (isExtensionOver) {
+                if (!visitor.expiredAt || (visitor.expiredAt < visitor.extendedAt)) {
+                    visitor.expiredAt = now;
+                    await visitor.save();
+                }
                 return res.status(402).json({
                     error: 'Trial Expired',
                     code: 'TRIAL_EXPIRED_EXTENDED',
                     message: 'Your extended 3-day trial has ended. Please contact us for full access.'
                 });
             }
+        }
+
+        // Access allowed, reset expiredAt if it was set
+        if (visitor.expiredAt) {
+            visitor.expiredAt = null;
+            await visitor.save();
         }
 
         next();
@@ -941,6 +971,62 @@ app.put('/api/settings', authenticateToken, async (req, res) => {
         res.json(settings);
     } catch (err) {
         res.status(500).json({ error: 'Failed to update settings', details: err.message });
+    }
+});
+
+// Trial Management (Super Admin ONLY)
+app.get('/api/admin/visitors', authenticateToken, requireSuperAdmin, async (req, res) => {
+    try {
+        const visitors = await Visitor.find().sort({ lastSeen: -1 });
+        res.json(visitors);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch visitors' });
+    }
+});
+
+app.post('/api/admin/visitors/extend', authenticateToken, requireSuperAdmin, async (req, res) => {
+    const { fingerprint, days = 7 } = req.body;
+    try {
+        const visitor = await Visitor.findOne({ fingerprint });
+        if (!visitor) return res.status(404).json({ error: 'Device not found' });
+        
+        visitor.isExtended = true;
+        visitor.extendedAt = new Date();
+        visitor.expiredAt = null; // Clear expiration if extending
+        await visitor.save();
+        
+        res.json({ success: true, visitor });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to extend trial' });
+    }
+});
+
+app.post('/api/admin/visitors/whitelist', authenticateToken, requireSuperAdmin, async (req, res) => {
+    const { fingerprint, whitelisted } = req.body;
+    try {
+        const visitor = await Visitor.findOne({ fingerprint });
+        if (!visitor) return res.status(404).json({ error: 'Device not found' });
+        
+        visitor.isWhitelisted = !!whitelisted;
+        if (whitelisted) visitor.expiredAt = null;
+        await visitor.save();
+        
+        res.json({ success: true, visitor });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/admin/settings/trial-toggle', authenticateToken, requireSuperAdmin, async (req, res) => {
+    const { enabled } = req.body;
+    try {
+        let settings = await Settings.findOne();
+        if (!settings) settings = new Settings();
+        settings.trialEnabled = !!enabled;
+        await settings.save();
+        res.json({ success: true, trialEnabled: settings.trialEnabled });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
     }
 });
 
