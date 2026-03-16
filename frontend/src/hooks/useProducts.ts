@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/api';
-import { getFingerprint } from '@/lib/fingerprint';
+// getFingerprint removed
 
 export interface CustomProduct {
     _id?: string;
@@ -26,18 +26,7 @@ export function useProducts() {
     const fetchProducts = useCallback(async (silent = false) => {
         try {
             if (!silent) setLoading(true);
-            const fingerprint = getFingerprint();
-            const res = await fetch(`${API_BASE_URL}/products`, {
-                headers: {
-                    'X-Fingerprint': fingerprint
-                }
-            });
-
-            if (res.status === 402) {
-                const errorData = await res.json();
-                window.dispatchEvent(new CustomEvent('GS_TRIAL_EXPIRED', { detail: errorData }));
-                return;
-            }
+            const res = await fetch(`${API_BASE_URL}/products`);
 
             if (!res.ok) throw new Error('Failed to fetch custom products');
             const data = await res.json();

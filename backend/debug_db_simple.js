@@ -6,36 +6,29 @@ dotenv.config({ path: 'd:/Work/SPM/live/backend/.env' });
 const visitorSchema = new mongoose.Schema({
     fingerprint: String,
     isWhitelisted: Boolean,
-    expiredAt: Date,
-    firstSeen: Date,
-    isExtended: Boolean,
-    extendedAt: Date
-});
+    expiredAt: Date
+}, { strict: false });
 const Visitor = mongoose.model('Visitor', visitorSchema);
 
 const settingsSchema = new mongoose.Schema({
-    trialEnabled: { type: Boolean, default: true }
-});
+    trialEnabled: Boolean
+}, { strict: false });
 const Settings = mongoose.model('Settings', settingsSchema);
 
 async function run() {
     try {
-        if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI missing');
         await mongoose.connect(process.env.MONGODB_URI);
         
-        console.log('--- DB DEBUG REPORT ---');
-        
         const settings = await Settings.findOne();
-        console.log('Global Settings:', JSON.stringify(settings, null, 2));
+        console.log('TRIAL_ENABLED:', settings ? settings.trialEnabled : 'NOT_FOUND');
         
         const visitor = await Visitor.findOne({ fingerprint: /B2AIUTJ5/i });
         if (visitor) {
-            console.log('Visitor Status:', JSON.stringify(visitor, null, 2));
+            console.log('VISITOR_FINGERPRINT:', visitor.fingerprint);
+            console.log('VISITOR_WHITELISTED:', visitor.isWhitelisted);
+            console.log('VISITOR_EXPIRED_AT:', visitor.expiredAt);
         } else {
-            console.log('Visitor B2AIUTJ5 NOT FOUND in database.');
-            // Search all visitors to be safe
-            const all = await Visitor.find().limit(10);
-            console.log('Recent Visitors Fingerprints:', all.map(v => v.fingerprint));
+            console.log('VISITOR_B2AIUTJ5_NOT_FOUND');
         }
         
         process.exit(0);

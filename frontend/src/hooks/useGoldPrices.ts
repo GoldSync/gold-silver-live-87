@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useProducts, CustomProduct } from './useProducts';
 import { useSettings } from './useSettings';
 import { getApiBaseUrl } from '@/lib/api';
-import { getFingerprint } from '@/lib/fingerprint';
+// getFingerprint removed
 
 // Troy ounce in grams
 const TROY_OZ_GRAMS = 31.1035;
@@ -167,20 +167,7 @@ export function useGoldPrices(options?: { manualOnly?: boolean }) {
     try {
       // Force Proxy Scraper Mode (Strip any direct API logic)
       const proxyUrl = `${getApiBaseUrl()}/prices?t=${Date.now()}`;
-      const fingerprint = getFingerprint();
-
-      const res = await fetch(proxyUrl, {
-        headers: {
-          'X-Fingerprint': fingerprint
-        }
-      });
-
-      if (res.status === 402) {
-        const errorData = await res.json();
-        // Trigger global event for Trial Expiration
-        window.dispatchEvent(new CustomEvent('GS_TRIAL_EXPIRED', { detail: errorData }));
-        throw new Error("Trial expired");
-      }
+      const res = await fetch(proxyUrl);
 
       if (!res.ok) throw new Error("Failed to fetch from proxy");
       const data = await res.json();

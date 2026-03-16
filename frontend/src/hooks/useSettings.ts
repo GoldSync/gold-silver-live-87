@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/api';
-import { getFingerprint } from '@/lib/fingerprint';
+// getFingerprint removed
 
 export interface CategoryTitles {
     goldBars: string;
@@ -31,24 +31,14 @@ export function useSettings() {
     const [currencyRate, setCurrencyRate] = useState<number>(3.65);
     const [marketCloseUTC, setMarketCloseUTC] = useState<string>('20:58');
     const [marketOpenUTC, setMarketOpenUTC] = useState<string>('23:01');
-    const [trialEnabled, setTrialEnabled] = useState<boolean>(true);
     const [loading, setLoading] = useState(true);
 
     const fetchSettings = useCallback(async (silent = false) => {
         try {
             if (!silent) setLoading(true);
-            const fingerprint = getFingerprint();
-            const res = await fetch(`${API_BASE_URL}/settings`, {
-                headers: {
-                    'X-Fingerprint': fingerprint
-                }
-            });
+            const res = await fetch(`${API_BASE_URL}/settings`);
 
-            if (res.status === 402) {
-                const errorData = await res.json();
-                window.dispatchEvent(new CustomEvent('GS_TRIAL_EXPIRED', { detail: errorData }));
-                return;
-            }
+            // 402 check removed as trial locking is disabled
 
             if (res.ok) {
                 const data = await res.json();
@@ -62,7 +52,6 @@ export function useSettings() {
                 if (data.currencyRate !== undefined) setCurrencyRate(data.currencyRate);
                 if (data.marketCloseUTC !== undefined) setMarketCloseUTC(data.marketCloseUTC);
                 if (data.marketOpenUTC !== undefined) setMarketOpenUTC(data.marketOpenUTC);
-                if (data.trialEnabled !== undefined) setTrialEnabled(Boolean(data.trialEnabled));
             }
         } catch (err: any) {
             console.error(err);
@@ -103,8 +92,7 @@ export function useSettings() {
         lockedAdminId?: string,
         currencyRate?: number,
         marketCloseUTC?: string,
-        marketOpenUTC?: string,
-        trialEnabled?: boolean
+        marketOpenUTC?: string
     }) => {
         try {
             const res = await fetch(`${API_BASE_URL}/settings`, {
@@ -127,10 +115,10 @@ export function useSettings() {
         }
     };
 
-    return { 
-        categoryTitles, margin, marginType, spotMargin, isLocked, 
-        forceLiveMarketPricing, lockedAdminId, currencyRate, 
-        marketCloseUTC, marketOpenUTC, trialEnabled, loading, 
-        updateSettings, refreshSettings: fetchSettings 
+    return {
+        categoryTitles, margin, marginType, spotMargin, isLocked,
+        forceLiveMarketPricing, lockedAdminId, currencyRate,
+        marketCloseUTC, marketOpenUTC, loading,
+        updateSettings, refreshSettings: fetchSettings
     };
 }

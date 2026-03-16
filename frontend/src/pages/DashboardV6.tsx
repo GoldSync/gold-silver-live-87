@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import logo from '@/assets/logo.png';
 import { MarketClosedBanner } from '@/components/MarketClosedBanner';
 import { DashboardLockOverlay } from '@/components/DashboardLockOverlay';
-import { TrialExpiredModal } from '@/components/TrialExpiredModal';
 
 import globalCurrenciesImg from '@/assets/images/Global currencies.png';
 import pamp1ozImg from '@/assets/images/pamp 1oz.png';
@@ -93,19 +92,7 @@ const DashboardV6 = () => {
         return () => clearInterval(timer);
     }, []);
 
-    // Trial Expiration Logic
-    const [trialExpired, setTrialExpired] = useState<{ type: 'INITIAL' | 'EXTENDED' } | null>(null);
-
-    useEffect(() => {
-        const handleTrialExpired = (e: any) => {
-            const detail = e.detail;
-            const type = detail.code === 'TRIAL_EXPIRED_EXTENDED' ? 'EXTENDED' : 'INITIAL';
-            setTrialExpired({ type });
-        };
-
-        window.addEventListener('GS_TRIAL_EXPIRED', handleTrialExpired);
-        return () => window.removeEventListener('GS_TRIAL_EXPIRED', handleTrialExpired);
-    }, []);
+    // Trial logic removed
 
     const dataMap = useMemo(() => ({
         jewelry: prices.jewelry,
@@ -145,7 +132,6 @@ const DashboardV6 = () => {
     return (
         <div className={`min-h-screen transition-colors duration-1000 ${isDark ? 'dark bg-[#0a0f1a] text-blue-50' : 'bg-blue-50/30 text-slate-900'} relative overflow-hidden`}>
             {isLocked && <DashboardLockOverlay />}
-            {trialExpired && <TrialExpiredModal type={trialExpired.type} />}
             {/* Background elements */}
             <style>{`
                 @keyframes parallax {
