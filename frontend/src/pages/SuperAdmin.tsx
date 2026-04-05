@@ -45,6 +45,11 @@ export default function SuperAdmin() {
         }
     }, [initialized, isAuthenticated, role, navigate]);
 
+    useEffect(() => {
+        if (!initialized || !isAuthenticated || role !== 'super_admin' || !token) return;
+        fetchUsers();
+    }, [initialized, isAuthenticated, role, token]);
+
     const fetchData = async () => {
         if (role === 'super_admin') {
             fetchUsers();
