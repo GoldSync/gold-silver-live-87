@@ -1,3 +1,5 @@
+import type { PagesFunction } from "@cloudflare/workers-types";
+
 export const onRequest: PagesFunction = async (context) => {
   const { request, params } = context;
   
