@@ -178,14 +178,19 @@ const DashboardV6 = () => {
                     .tv-mode .tv-spot-price { font-size: 2.25rem !important; }
                     .tv-mode .tv-spot-label { font-size: 9px !important; margin-bottom: 0.25rem !important; }
                     .tv-mode .tv-tabs { margin-bottom: 0.75rem !important; }
-                    .tv-mode .tv-card { height: 130px !important; }
+                    .tv-mode .tv-card { height: 155px !important; padding: 1.25rem !important; }
+                    .tv-mode .tv-card h3 { font-size: 1rem !important; }
+                    .tv-mode .tv-card .mb-5 { margin-bottom: 0.75rem !important; }
+                    .tv-mode .tv-card .space-y-3 { display: flex !important; flex-direction: column !important; gap: 0.4rem !important; margin-top: 0 !important; }
+                    .tv-mode .tv-card .text-2xl { font-size: 1.35rem !important; }
+                    .tv-mode .tv-card .text-xl { font-size: 1.15rem !important; }
                     .tv-mode .tv-content { padding-top: 5rem !important; }
                     .tv-mode .tv-header { top: 0.5rem !important; }
                     .tv-mode .tv-header-inner { padding: 0.35rem 0.75rem !important; }
                     .tv-mode .tv-theme-btn { top: 55px !important; }
                     .tv-mode .tv-footer { padding-bottom: 0.5rem !important; }
                     .tv-mode .tv-footer-line { margin-bottom: 0.25rem !important; }
-                    .tv-mode .tv-grid { gap: 0.5rem !important; }
+                    .tv-mode .tv-grid { gap: 0.75rem !important; }
                     .tv-mode .tv-product-area { padding-bottom: 1rem !important; }
                     .tv-mode .tv-trend-badge { margin-top: 0.25rem !important; padding: 0.125rem 0.5rem !important; }
                 `}</style>}
