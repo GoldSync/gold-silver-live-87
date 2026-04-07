@@ -132,6 +132,8 @@ const DashboardV6 = () => {
         border: 'border-[#ab8c56]/30'
     };
 
+    const contentWidthClass = isTvMode ? 'max-w-[96vw]' : 'max-w-[1400px]';
+
     return (
         <div className={`min-h-screen h-screen transition-colors duration-1000 ${isDark ? 'dark bg-[#0a0f1a] text-blue-50' : 'bg-blue-50/30 text-slate-900'} relative overflow-hidden`}>
             {isLocked && <DashboardLockOverlay />}
@@ -167,7 +169,7 @@ const DashboardV6 = () => {
             </div>
 
             {/* MAIN CONTENT LAYER */}
-            <div className={`absolute inset-0 z-10 overflow-y-auto flex flex-col items-center ${isTvMode ? 'tv-mode' : ''}`}>
+            <div className={`absolute inset-0 z-10 overflow-y-auto flex flex-col items-center w-screen max-w-full ${isTvMode ? 'tv-mode' : ''}`}>
                 {/* TV Mode compact styles */}
                 {isTvMode && <style>{`
                     .tv-mode { padding: 0 !important; }
@@ -242,7 +244,7 @@ const DashboardV6 = () => {
 
                 {/* CONTENT CONTAINER */}
                 <div className="w-full h-full flex flex-col items-center overflow-y-auto">
-                    <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center h-full relative">
+                    <div className={`${contentWidthClass} w-full mx-auto px-4 sm:px-6 py-6 flex flex-col items-center h-full relative`}>
 
                         {/* 1. TOP LOGO SECTION */}
                         <div className={`flex flex-col items-center mb-4 sm:mb-6 shrink-0 pt-32 sm:pt-4 tv-content`}>
